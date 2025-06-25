@@ -11,7 +11,7 @@ export default function Footer() {
             
             <div className="flex flex-col w-4/12 h-full items-start justify-start gap-4 mt-[20px]">
                 <h1 className="text-2xl font-extrabold text-primary-bg">Info Lainnya</h1>
-                <p className="text-primary-bg text-lg">
+                <p className="text-primary-bg text-lg text-justify">
                     Yayasan Nurul Hidayah adalah Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras bibendum tincidunt lorem, nec iaculis nisl. Cras eu vestibulum massa, in tincidunt turpis. Quisque eget mi ac lacus iaculis lobortis nec laoreet nisl. 
                 </p>
                 <div className="text-primary-bg">

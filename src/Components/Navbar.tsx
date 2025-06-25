@@ -63,19 +63,19 @@ export default function Navbar() {
     <div className="w-full fixed h-[80px] bg-primary-fg top-0 left-0 z-20">
       <div className="flex-row flex w-full h-[80px] backdrop-blur-sm z-15 text-primary-bg items-center justify-center top-0 left-0 sticky">
         <div className="flex w-full h-full items-center justify-center">
-          {/* Left: Logo */}
+          
           <div className="flex w-full items-center justify-start flex-row px-8">
             <Link to="/" className="flex items-center justify-start flex-row">
               <img src="/images/LogoYayasan.png" className="w-auto flex h-12" />
             </Link>
           </div>
 
-          {/* Center: Navigation */}
+        
           <div className="flex w-full items-center justify-around">
             <Link
               to="/"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/") ? "border-b-4 border-primary-bg" : ""
+                isActiveUrl("/") ? "border-b-4 border-blue-500 text-blue-500" : ""
               }`}
             >
               Home
@@ -98,11 +98,12 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Right: Auth */}
+          
           {!auth.user ? (
             <div className="flex w-full items-end justify-end px-4">
               <Link
-                to="/login"
+                
+                to="/auth/login"
                 className="items-center justify-center mr-3 bg-primary-bg w-1/3 h-[50px] text-center flex text-primary-fg hover:text-primary-fg/100 cursor-pointer"
               >
                 Login
