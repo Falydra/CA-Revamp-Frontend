@@ -75,7 +75,7 @@ export default function Navbar() {
             <Link
               to="/"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/") ? "border-b-4 border-blue-500 text-blue-500" : ""
+                isActiveUrl("/") ? "border-b-4 border-blue-500 text-blue-500" : "text-muted-foreground"
               }`}
             >
               Home
@@ -83,7 +83,7 @@ export default function Navbar() {
             <Link
               to="/news"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/news") ? "border-b-4 border-primary-bg" : ""
+                isActiveUrl("/news") ? "border-b-4 border-primary-bg" : "text-muted-foreground"
               }`}
             >
               News
@@ -91,7 +91,7 @@ export default function Navbar() {
             <Link
               to="/donation"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/donation") ? "border-b-4 border-primary-bg" : ""
+                isActiveUrl("/donation") ? "border-b-4 border-primary-bg" : "text-muted-foreground"
               }`}
             >
               Donation
@@ -104,7 +104,7 @@ export default function Navbar() {
               <Link
                 
                 to="/auth/login"
-                className="items-center justify-center mr-3 bg-primary-bg w-1/3 h-[50px] text-center flex text-primary-fg hover:text-primary-fg/100 cursor-pointer"
+                className="items-center justify-center mr-3 bg-primary-bg w-1/3 h-[50px] text-center flex text-muted-foreground hover:text-blue-500 cursor-pointer"
               >
                 Login
               </Link>
