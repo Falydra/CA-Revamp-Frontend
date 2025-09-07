@@ -1,10 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
-    content: [
-        "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
-    ],
+    content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
     	extend: {
     		borderRadius: {
@@ -13,6 +10,11 @@ export default {
     			sm: 'calc(var(--radius) - 4px)'
     		},
     		colors: {
+    			'primary-bg': '#6366f1',
+    			'primary-fg': '#ffffff',
+    			'primary-accent': '#4f46e5',
+    			'secondary-bg': '#3b82f6',
+    			'secondary-fg': '#ffffff',
     			background: 'hsl(var(--background))',
     			foreground: 'hsl(var(--foreground))',
     			card: {
@@ -52,9 +54,19 @@ export default {
     				'3': 'hsl(var(--chart-3))',
     				'4': 'hsl(var(--chart-4))',
     				'5': 'hsl(var(--chart-5))'
+    			},
+    			sidebar: {
+    				DEFAULT: 'hsl(var(--sidebar-background))',
+    				foreground: 'hsl(var(--sidebar-foreground))',
+    				primary: 'hsl(var(--sidebar-primary))',
+    				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+    				accent: 'hsl(var(--sidebar-accent))',
+    				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+    				border: 'hsl(var(--sidebar-border))',
+    				ring: 'hsl(var(--sidebar-ring))'
     			}
     		}
     	}
     },
     plugins: [require("tailwindcss-animate")],
-}
+};

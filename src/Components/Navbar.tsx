@@ -16,7 +16,7 @@ import axios from "axios";
 interface User {
   name?: string;
   email?: string;
-  role: string;
+  role?: string;
 }
 
 interface NavbarProps {
@@ -28,54 +28,79 @@ interface NavbarProps {
 
 export default function Navbar() {
   const location = useLocation();
-    const auth: NavbarProps["auth"] = {
-    roles: localStorage.getItem("roles") || "",
-    user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "{}") : undefined,
-    };
   const navigate = useNavigate();
+  
+  // Get auth data from localStorage
+  const auth: NavbarProps["auth"] = {
+    roles: localStorage.getItem("roles") || "",
+    user: localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user") || "{}")
+      : undefined,
+  };
 
   const currentPath = location.pathname;
 
-  const dashboardIdentifier =
-    auth.roles === "superadmin"
-      ? "/dashboard/super-admin"
-      : auth.roles === "admin"
-      ? "/dashboard/admin"
-      : auth.roles === "donor"
-      ? "/dashboard/donor"
-      : auth.roles === "donee"
-      ? "/dashboard/donee"
-      : "/";
+  // Role-based dashboard routing
+  const getDashboardUrl = (role: string) => {
+    switch (role) {
+      case "superadmin":
+        return "/dashboard/super-admin";
+      case "admin":
+        return "/dashboard/admin";
+      case "donor":
+        return "/dashboard/donor";
+      case "donee":
+        return "/dashboard/donee";
+      default:
+        return "/";
+    }
+  };
+
+  const dashboardUrl = getDashboardUrl(auth.roles);
 
   const isActiveUrl = (path: string) =>
     path === "/" ? currentPath === "/" : currentPath.startsWith(path);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/logout`, {}, { withCredentials: true });
-      navigate("/login");
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/logout`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      // Always clear localStorage and redirect
+      localStorage.removeItem("user");
+      localStorage.removeItem("roles");
+      localStorage.removeItem("auth_token");
+      navigate("/auth/login");
     }
   };
 
   return (
-    <div className="w-full fixed h-[80px] bg-primary-fg top-0 left-0 z-20">
-      <div className="flex-row flex w-full h-[80px] backdrop-blur-sm z-15 text-primary-bg items-center justify-center top-0 left-0 sticky">
+    <div className="w-full fixed h-[80px] top-0 left-0 z-20">
+      <div className="flex w-full h-[80px] backdrop-blur-sm z-15 text-primary-bg items-center justify-center top-0 left-0 sticky">
         <div className="flex w-full h-full items-center justify-center">
-          
           <div className="flex w-full items-center justify-start flex-row px-8">
             <Link to="/" className="flex items-center justify-start flex-row">
               <img src="/images/LogoYayasan.png" className="w-auto flex h-12" />
             </Link>
           </div>
 
-        
           <div className="flex w-full items-center justify-around">
             <Link
               to="/"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/") ? "border-b-4 border-blue-500 text-blue-500" : "text-muted-foreground"
+                isActiveUrl("/")
+                  ? "border-b-4 border-blue-500 text-blue-500"
+                  : "text-muted-foreground"
               }`}
             >
               Home
@@ -83,7 +108,9 @@ export default function Navbar() {
             <Link
               to="/news"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/news") ? "border-b-4 border-primary-bg" : "text-muted-foreground"
+                isActiveUrl("/news")
+                  ? "border-b-4 border-blue-500 text-blue-500"
+                  : "text-muted-foreground"
               }`}
             >
               News
@@ -91,20 +118,20 @@ export default function Navbar() {
             <Link
               to="/donation"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/donation") ? "border-b-4 border-primary-bg" : "text-muted-foreground"
+                isActiveUrl("/donation")
+                  ? "border-b-4 border-blue-500 text-blue-500"
+                  : "text-muted-foreground"
               }`}
             >
               Donation
             </Link>
           </div>
 
-          
           {!auth.user ? (
             <div className="flex w-full items-end justify-end px-4">
               <Link
-                
                 to="/auth/login"
-                className="items-center justify-center mr-3 bg-primary-bg w-1/3 h-[50px] text-center flex text-muted-foreground hover:text-blue-500 cursor-pointer"
+                className="items-center justify-center mr-3 hover:bg-blue-100 rounded-md transition-all duration-300 w-1/3 h-[50px] text-center flex hover:text-blue-500 cursor-pointer"
               >
                 Login
               </Link>
@@ -114,19 +141,21 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild className="w-full h-full">
                   <Button
-                    className="w-12 h-12 aspect-square rounded-full bg-primary-bg hover:bg-primary-bg focus:outline-none"
+                    className="w-12 h-12 aspect-square rounded-full bg-primary-fg border border-primary-bg hover:bg-primary-bg focus:outline-none"
                     tabIndex={0}
                     type="button"
                   >
-                    <IoPersonOutline className="w-6 h-6 text-primary-fg" />
+                    <IoPersonOutline className="w-6 h-6 text-primary-bg" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 mr-4 overflow-y-auto">
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    {auth.user.name || "Account"}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <Link
-                      to={dashboardIdentifier}
+                      to={dashboardUrl}
                       className="flex justify-between w-full h-8 items-center bg-transparent hover:bg-muted-foreground/20 rounded-md text-primary-bg px-2 font-semibold text-sm"
                     >
                       Dashboard
