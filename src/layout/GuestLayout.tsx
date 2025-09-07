@@ -30,7 +30,7 @@ export default function Guest({ children }: PropsWithChildren) {
   );
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br overflow-x-hidden from-indigo-50 via-white to-blue-100">
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br overflow-x-hidden overflow-hidden from-indigo-50 via-white to-blue-100">
       <Navbar />
       {bubbles.map((b) => (
         <div
@@ -43,7 +43,7 @@ export default function Guest({ children }: PropsWithChildren) {
             opacity: b.opacity,
             filter: `blur(${b.blur}px)`,
           }}
-          className={`absolute rounded-full ${b.color} pointer-events-none`}
+          className={`absolute rounded-full ${b.color} pointer-events-none z-1`}
         />
       ))}
       <div className="flex-grow min-h-screen w-full items-center justify-center pt-[60px]">
