@@ -7,33 +7,33 @@ export default function ProgramNews({isMore = false} : {isMore?: boolean}) {
         {
             title: "Program Pendidikan",
             description: "Menyediakan pendidikan berkualitas untuk anak-anak di lingkungan sekitar.",
-            image: "https://example.com/education.jpg"
+            image: "/images/Charity1.jpeg"
         },
         {
             title: "Program Kesehatan",
             description: "Memberikan layanan kesehatan gratis kepada masyarakat yang membutuhkan.",
-            image: "https://example.com/health.jpg"
+            image: "/images/Charity1.jpeg"
         },
         {
             title: "Program Lingkungan",
             description: "Mengadakan kegiatan penghijauan dan pelestarian lingkungan.",
-            image: "https://example.com/environment.jpg"
+            image: "/images/Charity1.jpeg"
         },
         {
             title: "Program Sosial",
             description: "Membantu masyarakat kurang mampu melalui berbagai inisiatif sosial.",
-            image: "https://example.com/social.jpg"
+            image: "/images/Charity1.jpeg"
         }
     ];
 
 
 
     return (
-        <div className="flex flex-col items-start w-full h-[750px] justify-start px-8">
+        <div className="flex z-50 flex-col items-start w-full h-[750px] justify-start px-8">
             <div className="flex flex-row w-full h-4/5 items-center justify-center py-4 gap-4 ">
                 {data.map((news, index) => 
                     index < 3 && (
-                        <div key={index} className="w-4/12 h-4/5 flex flex-col items-center justify-start bg-primary-fg hover:scale-105 transition-transform duration-500 ease-in-out rounded-2xl">
+                        <div key={index} className="w-4/12 h-4/5 flex flex-col items-center justify-start bg-indigo-50 hover:scale-105 transition-transform duration-500 ease-in-out rounded-2xl">
                             <div className={`w-full h-2/5 flex items-center justify-center bg-[url(${news.image})] bg-cover bg-center rounded-t-2xl cursor-pointer `}/>
                             <h1 className="text-xl font-bold text-primary-bg px-4 pt-4 cursor-pointer">
                                 {news.title}

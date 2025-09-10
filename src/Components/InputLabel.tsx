@@ -1,4 +1,4 @@
-import { LabelHTMLAttributes } from 'react';
+import { type LabelHTMLAttributes } from 'react';
 
 export default function InputLabel({
     value,
@@ -10,7 +10,7 @@ export default function InputLabel({
         <label
             {...props}
             className={
-                `block text-sm font-medium text-primary-fg ` +
+                `block text-sm font-medium text-primary-bg ` +
                 className
             }
         >

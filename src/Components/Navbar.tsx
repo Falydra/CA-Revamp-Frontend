@@ -30,7 +30,6 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Get auth data from localStorage
   const auth: NavbarProps["auth"] = {
     roles: localStorage.getItem("roles") || "",
     user: localStorage.getItem("user")
@@ -40,7 +39,7 @@ export default function Navbar() {
 
   const currentPath = location.pathname;
 
-  // Role-based dashboard routing
+ 
   const getDashboardUrl = (role: string) => {
     switch (role) {
       case "superadmin":
@@ -76,13 +75,16 @@ export default function Navbar() {
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      // Always clear localStorage and redirect
+     
       localStorage.removeItem("user");
       localStorage.removeItem("roles");
       localStorage.removeItem("auth_token");
       navigate("/auth/login");
+      
     }
   };
+
+  console.log("Roles:", auth.roles);
 
   return (
     <div className="w-full fixed h-[80px] top-0 left-0 z-20">

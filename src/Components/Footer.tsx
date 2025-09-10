@@ -7,7 +7,7 @@ import { FaInstagram } from "react-icons/fa";
 
 export default function Footer() {
     return (
-        <div className="flex w-full h-full md:flex-row flex-row bg-primary-fg items-start py-4 justify-center px-16 gap-8 overflow-y-hidden">
+        <div className="flex w-full h-full md:flex-row flex-row bg-white items-start py-4 justify-center px-16 gap-8 overflow-y-hidden">
             
             <div className="flex flex-col w-4/12 h-full items-start justify-start gap-4 mt-[20px]">
                 <h1 className="text-2xl font-extrabold text-blue-500">Info Lainnya</h1>
@@ -64,7 +64,7 @@ export default function Footer() {
                         href="https://www.instagram.com/undip.official/"
                         className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center"
                     >
-                        <FaInstagram className="w-12 h-12 text-primary-fg" />
+                        <FaInstagram className="w-8 h-8 text-primary-fg" />
                     </a>
                 </div>
             </div>

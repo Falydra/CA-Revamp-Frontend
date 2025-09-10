@@ -102,7 +102,7 @@ export default function LoginForm({
       </div>
       <form onSubmit={submit} className="w-full">
         <div className="text-start text-blue-500">
-          <InputLabel htmlFor="email" value="Email" />
+          <InputLabel htmlFor="email" value="Email" className="text-primary-bg" />
           <TextInput
             id="email"
             type="email"

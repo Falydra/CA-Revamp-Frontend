@@ -1,17 +1,16 @@
 export type User = {
-  user_id: string; // Based on users table migration - string(14) primary key
-  name: string; // Based on users table migration - string(25) unique
-  email: string; // Based on users table migration - string(50) unique
-  email_verified_at?: string | null; // timestamp nullable
-  password?: string; // Only when creating/updating
+  user_id: string; 
+  name: string; 
+  email: string; 
+  email_verified_at?: string | null;
+  password?: string; 
   remember_token?: string | null;
   created_at?: string;
   updated_at?: string;
-  roles?: Role[]; // From BelongsToManyRoles relationship
-  role?: string; // Single role string - may be computed attribute
+  roles?: Role[]; 
+  role?: string; 
 };
 
-// Authentication API response types
 export type LoginResponse = {
   success: boolean;
   message: string;
@@ -21,18 +20,18 @@ export type LoginResponse = {
   };
 };
 
-// Fixed Book - Based on books table migration
+
 export type Book = {
-  isbn: string; // string(13) primary key
-  title: string; // string(255) unique
-  slug: string; // string(255)
-  synopsis?: string | null; // text nullable
-  author_1: string; // string(255)
-  author_2?: string | null; // string(255) nullable
-  author_3?: string | null; // string(255) nullable
-  published_year: string; // string(4)
-  cover_image_url?: string | null; // text nullable
-  price: number; // decimal(10,2)
+  isbn: string;
+  title: string; 
+  slug: string; 
+  synopsis?: string | null; 
+  author_1: string; 
+  author_2?: string | null; 
+  author_3?: string | null; 
+  published_year: string; 
+  cover_image_url?: string | null; 
+  price: number; 
   created_at?: string;
   updated_at?: string;
 };
@@ -42,10 +41,10 @@ export type BookWithAmount = {
   amount: number;
 };
 
-// Role type based on roles table migration
+
 export type Role = {
-  role_id: string; // string(5) primary key
-  name: string; // string
+  role_id: string; 
+  name: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -57,6 +56,40 @@ export type Organizer = {
     name: string;
   }
 }
+
+export type OrganizerApplication = {
+  application_id: string;
+  user_id: string;
+  full_name: string;
+  phone_number: string;
+  gender: string;
+  date_of_birth: string;
+  nik: string;
+  id_card_image?: string | null;
+  address_detail: string;
+  rt: string;
+  rw: string;
+  kelurahan: string;
+  kecamatan: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  user?: User;
+};
+
+export type AdminStats = {
+  total_users: number;
+  total_campaigns: number;
+  total_donations: number;
+  pending_applications: number;
+  pending_campaigns: number;
+  total_funds_raised: number;
+};
+
 
 export type Campaign = {
   type: string;
@@ -74,72 +107,75 @@ export type Campaign = {
     donated_item_quantity: number;
     created_at: string;
     reviewed_at: string;
+
   };
   relationships: {
     organizer: Organizer;
   }
   links: string;
+  created_at?: string;
+
 };
 
-// Fund type - for monetary donations to campaigns
+
 export type Fund = {
-  fund_id: string; // Primary key
-  campaign_id: string; // Foreign key to campaigns
-  donor_id?: string | null; // Foreign key to users (nullable for anonymous)
-  donor_name?: string | null; // For anonymous donors
-  amount: number; // decimal(15,2)
-  status: string; // enum: pending, verified, rejected
+  fund_id: string;
+  campaign_id: string; 
+  donor_id?: string | null; 
+  donor_name?: string | null; 
+  amount: number; 
+  status: string; 
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
   
-  // Relationships
+
   campaign?: Campaign;
   donor?: User;
 };
 
-// DonatedBook type - for book donations to campaigns
+
 export type DonatedBook = {
-  donated_book_id: string; // Primary key
-  campaign_id: string; // Foreign key to campaigns
-  book_isbn: string; // Foreign key to books
-  donor_id?: string | null; // Foreign key to users (nullable for anonymous)
-  donor_name?: string | null; // For anonymous donors
+  donated_book_id: string;
+  campaign_id: string;
+  book_isbn: string; 
+  donor_id?: string | null; 
+  donor_name?: string | null; 
   quantity: number;
-  status: string; // enum: pending, verified, rejected
+  status: string; 
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
   
-  // Relationships
+ 
   campaign?: Campaign;
   book?: Book;
   donor?: User;
 };
 
-// DonatedItem type - for supply/item donations to campaigns
+
 export type DonatedItem = {
-  donated_item_id: string; // Primary key
-  campaign_id: string; // Foreign key to campaigns
-  requested_supply_id: string; // Foreign key to requested_supplies
-  donor_id?: string | null; // Foreign key to users (nullable for anonymous)
-  donor_name?: string | null; // For anonymous donors
+  donated_item_id: string;
+  campaign_id: string;
+  requested_supply_id: string; 
+  donor_id?: string | null; 
+  donor_name?: string | null;
   quantity: number;
-  status: string; // enum: pending, verified, rejected
+  status: string; 
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
   
-  // Relationships
+ 
   campaign?: Campaign;
   requested_supply?: RequestedSupply;
   donor?: User;
 };
 
-// RequestedSupply type - supplies/items needed for campaigns
+
 export type RequestedSupply = {
-  requested_supply_id: string; // Primary key
-  campaign_id: string; // Foreign key to campaigns
+  requested_supply_id: string; 
+  campaign_id: string; 
   name: string;
   description?: string | null;
   quantity_needed: number;
@@ -148,12 +184,12 @@ export type RequestedSupply = {
   created_at?: string;
   updated_at?: string;
   
-  // Relationships
+ 
   campaign?: Campaign;
   donated_items?: DonatedItem[];
 };
 
-// API Response types
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;
@@ -170,7 +206,7 @@ export type PaginatedResponse<T> = {
   prev_page_url?: string | null;
 };
 
-// Legacy types - keep for backward compatibility but mark for removal
+
 export type Facility = {
   id: number | string;
   name: string;
@@ -225,5 +261,3 @@ export type Address = {
   postal_code: string | null;
 } | null;
 
-// Remove all Donation types as the donations table is unused
-// Remove PageProps as it's from Inertia.js

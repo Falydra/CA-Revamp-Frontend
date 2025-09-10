@@ -9,28 +9,45 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ProgressBar from "@ramonak/react-progress-bar";
 import { apiService } from "@/services/api";
-import type { Campaign } from "@/types/index.d";
+
+type CampaignCard = {
+  id?: string;
+  campaign_id?: string;
+  attributes?: {
+    title?: string;
+    description?: string;
+    header_image_url?: string | null;
+    requested_fund_amount?: number;
+    donated_fund_amount?: number;
+  };
+  
+  title?: string;
+  description?: string;
+  header_image_url?: string | null;
+  requested_fund_amount?: number;
+  donated_fund_amount?: number;
+};
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function CardWithForm() {
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [campaign, setCampaign] = useState<CampaignCard | null>(null);
 
   useEffect(() => {
     const loadCampaign = async () => {
       try {
-       
-      
-        
         const response = await apiService.getCampaigns();
-        
-       
 
+        const list = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
 
-        if (response.data && response.data.length > 0) {
-          setCampaign(response.data[0]);
+        if (Array.isArray(list) && list.length > 0) {
+          setCampaign(list[0] as CampaignCard);
         }
       } catch (error) {
         console.error("Error fetching campaign:", error);
@@ -40,16 +57,27 @@ export function CardWithForm() {
     loadCampaign();
   }, []);
 
-
-  if (!campaign || !campaign.attributes) {
+  if (!campaign) {
     return null;
   }
 
+  const attr = campaign.attributes ? campaign.attributes : campaign;
 
-  
-  const donatedAmount = campaign.attributes.donated_fund_amount;
-  const requestedAmount = campaign.attributes.requested_fund_amount;
-  const progressPercentage = Math.round((donatedAmount / requestedAmount) * 100);
+  const title = attr.title ? attr.title : "Campaign";
+  const description = attr.description ? attr.description : "";
+  const headerImage = attr.header_image_url ? attr.header_image_url : "/images/Charity1.jpeg";
+
+  const donatedAmount = typeof attr.donated_fund_amount === "number" ? attr.donated_fund_amount : 0;
+  const requestedAmount = typeof attr.requested_fund_amount === "number" ? attr.requested_fund_amount : 0;
+
+  const progressPercentage =
+    requestedAmount > 0 ? Math.min(Math.round((donatedAmount / requestedAmount) * 100), 100) : 0;
+
+  const displayId = campaign.campaign_id ? campaign.campaign_id : campaign.id;
+
+  const words = description ? description.split(" ") : [];
+  const limited = words.slice(0, 75).join(" ");
+  const hasMore = words.length > 75;
 
   return (
     <div className="flex flex-col gap-6 w-full items-center">
@@ -57,15 +85,10 @@ export function CardWithForm() {
         <div className="flex flex-row w-full h-full">
           <div className="w-6/12 h-full justify-between items-start flex flex-col hover:text-primary-bg hover:rounded-l-xl">
             <CardHeader className="text-start text-xl">
-              <CardTitle>{campaign.attributes.title}</CardTitle>
+              <CardTitle>{title}</CardTitle>
               <CardDescription>
-                {campaign.attributes.description
-                  ?.split(" ")
-                  .slice(0, 75)
-                  .join(" ") +
-                  (campaign.attributes.description?.split(" ").length > 75
-                    ? "..."
-                    : "")}
+                {limited}
+                {hasMore ? "..." : null}
               </CardDescription>
             </CardHeader>
 
@@ -90,7 +113,7 @@ export function CardWithForm() {
 
               <Link
                 className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"
-                to={`/donation/${campaign.id}`}
+                to={`/campaigns/${campaign.attributes?.slug || campaign.slug || displayId}`}
               >
                 <h3 className="text-md font-semibold text-primary-fg text-center items-center justify-center">
                   Detail
@@ -101,12 +124,11 @@ export function CardWithForm() {
 
           <div className="w-6/12 h-full items-center justify-center flex flex-col bg-cover bg-center rounded-r-xl">
             <img
-              src={campaign.attributes.header_image_url || "/images/Charity1.jpeg"}
-              alt={campaign.attributes.title}
+              src={headerImage}
+              alt={title}
               className="w-full h-full object-cover rounded-r-xl"
               onError={(e) => {
-                e.currentTarget.src =
-                  "https://via.placeholder.com/400x300?text=Campaign+Image";
+                e.currentTarget.src = "https://via.placeholder.com/400x300?text=Campaign+Image";
               }}
             />
           </div>

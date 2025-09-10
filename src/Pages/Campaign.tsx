@@ -20,12 +20,10 @@ export default function CampaignPage() {
         setLoading(true);
         const response = await apiService.getCampaigns();
 
-        
         if (response.data) {
           if (Array.isArray(response.data)) {
             setCampaigns(response.data);
           } else if (response.data.data && Array.isArray(response.data.data)) {
-           
             setCampaigns(response.data.data);
           } else {
             setCampaigns([]);
@@ -73,7 +71,7 @@ export default function CampaignPage() {
     <Guest>
       <div className="pt-[60px] w-full flex flex-col items-start justify-start gap-2">
         <h1 className="text-2xl font-bold px-8">Campaigns</h1>
-       
+
         <div className="w-full p-8">
           <div className="grid-cols-3 grid justify-around gap-8 items-start w-full">
             {campaigns.length > 0 ? (
@@ -88,9 +86,7 @@ export default function CampaignPage() {
                       className="w-full h-3/5 flex"
                     >
                       <img
-                        src={
-                          campaign.attributes.header_image_url || ""
-                        }
+                        src={campaign.attributes.header_image_url || ""}
                         className="w-full h-[180px] rounded-b-none object-cover absolute inset-0 rounded-lg"
                         alt={campaign.attributes.title}
                         onError={(e) => {
@@ -105,7 +101,9 @@ export default function CampaignPage() {
                         }`}
                       >
                         <span>
-                          {campaign.attributes.requested_fund_amount >= 0 ? "Charity" : "Items"}
+                          {campaign.attributes.requested_fund_amount >= 0
+                            ? "Charity"
+                            : "Items"}
                         </span>
                       </div>
                       <div
@@ -125,8 +123,6 @@ export default function CampaignPage() {
                       </div>
                     </Link>
                     <div className="w-full h-2/5 bg-gray-300 flex-col items-start rounded-b-lg flex justify-start">
-                      
-
                       <Link
                         to={`/campaigns/${campaign.campaign_id}`}
                         className="text-primary-bg hover:text-primary-accent leading-small px-4 text-lg font-bold cursor-pointer"
@@ -140,10 +136,17 @@ export default function CampaignPage() {
                             : "Received"}
                         </h1>
                         <h1 className="text-primary-accent px-4 text-sm font-semibold cursor-pointer absolute bottom-1">
-                          {campaign.attributes.requested_fund_amount <= 0 
-                            ? `${campaign.attributes.donated_item_quantity}/ ${campaign.attributes.requested_item_quantity} items` 
-                            : `Rp ${formatPrice(parseInt(campaign.attributes.donated_fund_amount))} / ${formatPrice(parseInt(campaign.attributes.requested_fund_amount))}`
-                          }{" "}
+                          {campaign.attributes.requested_fund_amount <= 0
+                            ? `${campaign.attributes.donated_item_quantity}/ ${campaign.attributes.requested_item_quantity} items`
+                            : `Rp ${formatPrice(
+                                parseInt(
+                                  campaign.attributes.donated_fund_amount
+                                )
+                              )} / ${formatPrice(
+                                parseInt(
+                                  campaign.attributes.requested_fund_amount
+                                )
+                              )}`}{" "}
                         </h1>
                       </div>
                     </div>
@@ -157,7 +160,6 @@ export default function CampaignPage() {
             )}
           </div>
         </div>
-        {/* <CharityNews /> */}
       </div>
     </Guest>
   );
