@@ -32,7 +32,7 @@ export default function DonorDashboard() {
         }
 
         
-        const campaignResponse = await apiService.getCampaigns();
+        const campaignResponse = await apiService.getCampaigns({});
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
           : Array.isArray(campaignResponse?.data)
@@ -212,8 +212,8 @@ export default function DonorDashboard() {
               {campaigns.map((campaign) => {
                 const campaignData = campaign.attributes || campaign;
                 const organizerName =
-                  campaign.relationships?.organizer?.attriutes?.name ||
-                  campaign.relationships?.organizer.attriutes?.name ||
+                  campaign.relationships?.organizer?.attributes?.name ||
+                  campaign.relationships?.organizer.attributes?.name ||
                   "Anonymous";
 
                 return (

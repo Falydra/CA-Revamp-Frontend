@@ -2,6 +2,7 @@ import Footer from "@/Components/Footer";
 import Navbar from "@/Components/Navbar";
 import type { PropsWithChildren } from "react";
 import { useMemo } from "react";
+import { Toaster } from "sonner";
 
 function getRandom(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -30,25 +31,28 @@ export default function Guest({ children }: PropsWithChildren) {
   );
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br overflow-x-hidden overflow-hidden from-indigo-50 via-white to-blue-100">
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-indigo-50 via-white to-blue-100">
       <Navbar />
-      {bubbles.map((b) => (
-        <div
-          key={b.key}
-          style={{
-            left: b.left,
-            top: b.top,
-            width: b.size,
-            height: b.size,
-            opacity: b.opacity,
-            filter: `blur(${b.blur}px)`,
-          }}
-          className={`absolute rounded-full ${b.color} pointer-events-none z-1`}
-        />
-      ))}
+      <div className="w-full overflow-hidden">
+        {bubbles.map((b) => (
+          <div
+            key={b.key}
+            style={{
+              left: b.left,
+              top: b.top,
+              width: b.size,
+              height: b.size,
+              opacity: b.opacity,
+              filter: `blur(${b.blur}px)`,
+            }}
+            className={`absolute rounded-full ${b.color} pointer-events-none -z-[1]`}
+          />
+        ))}
+      </div>
       <div className="flex-grow min-h-screen w-full items-center justify-center pt-[60px]">
         {children}
       </div>
+      <Toaster />
       <Footer />
     </div>
   );
