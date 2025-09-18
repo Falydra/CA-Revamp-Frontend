@@ -15,7 +15,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/Components/ui/sidebar";
-import { SearchForm } from "@/Components/search-form";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +117,7 @@ export default function Authenticated({
 
     
     const currentPath = location.pathname;
+    console.log("Roles:", auth.roles);
 
    
     const getMenuItems = (role: string) => {
@@ -191,7 +191,7 @@ export default function Authenticated({
                                 </BreadcrumbList>
                             </Breadcrumb>
                         </div>
-                        <SearchForm className="self-center w-full" />
+                        
                         <div className="flex flex-row items-center justify-center">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild className="w-full h-full">

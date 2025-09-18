@@ -40,18 +40,17 @@ export default function Navbar() {
   const currentPath = location.pathname;
 
  
-  const getDashboardUrl = (role: string) => {
-    switch (role) {
-      case "superadmin":
-        return "/dashboard/super-admin";
-      case "admin":
-        return "/dashboard/admin";
-      case "donor":
-        return "/dashboard/donor";
-      case "donee":
-        return "/dashboard/donee";
-      default:
-        return "/";
+  const getDashboardUrl = (role: string[]) => {
+    if (role.includes("superadmin")) {
+      return "dashboard/superadmin";
+    } else if (role.includes("admin")) {
+      return "dashboard/admin";
+    } else if (role.includes("organizer")) {
+      return "dashboard/donee";
+    } else if (role.includes("donor")) {
+      return "dashboard/donor";
+    } else {
+      return "/";
     }
   };
 

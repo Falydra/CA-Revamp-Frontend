@@ -29,6 +29,9 @@ export default function AdminDashboard() {
     pendingCampaigns: 0,
     activeCampaigns: 0,
     totalFundsRaised: 0,
+    totalFundsRequired: 0,
+    totalItemsRequired: 0,
+    totalItemsDonated: 0,
     pendingApplications: 0,
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
@@ -45,16 +48,19 @@ export default function AdminDashboard() {
         }
 
         
+        let apiStats = null;
         try {
           const statsResponse = await apiService.admin.getDashboardStats();
           if (statsResponse.success) {
-            setStats(statsResponse.data);
+            apiStats = statsResponse.data;
           }
         } catch (error) {
-          console.log("Dashboard stats not available, using fallback");
+          console.error(
+            "Dashboard stats not available, using fallback calculations", error
+          );
         }
 
-      
+       
         const campaignResponse = await apiService.getCampaigns();
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
@@ -64,30 +70,73 @@ export default function AdminDashboard() {
 
         setRecentCampaigns(campaignList.slice(0, 5));
 
-        
-        if (stats.totalCampaigns === 0) {
-          const totalCampaigns = campaignList.length;
-          const pendingCampaigns = campaignList.filter(
-            (c: Campaign) => c.attributes?.status === "pending"
-          ).length;
-          const activeCampaigns = campaignList.filter(
-            (c: Campaign) => c.attributes?.status === "on_progress"
-          ).length;
-          const totalFundsRaised = campaignList.reduce(
-            (sum: number, campaign: Campaign) => {
-              return sum + (campaign.attributes?.donated_fund_amount || 0);
-            },
-            0
-          );
-
-          setStats((prev) => ({
-            ...prev,
-            totalCampaigns,
-            pendingCampaigns,
-            activeCampaigns,
-            totalFundsRaised,
-          }));
+        let totalUsers = 0;
+        try {
+          const usersResponse = await apiService.admin.getUsers(1, 1);
+          if (usersResponse.success && usersResponse.data.total) {
+            totalUsers = usersResponse.data.total;
+          }
+        } catch (error) {
+          console.log("Could not fetch users count", error);
         }
+
+        // Calculate stats from campaign data
+        const totalCampaigns = campaignList.length;
+        const pendingCampaigns = campaignList.filter(
+          (c: Campaign) => c.attributes?.status === "pending"
+        ).length;
+        const activeCampaigns = campaignList.filter(
+          (c: Campaign) => c.attributes?.status === "on_progress"
+        ).length;
+
+        // Calculate fund-related stats
+        const totalFundsRaised = campaignList.reduce(
+          (sum: number, campaign: Campaign) => {
+            const amount = campaign.attributes?.donated_fund_amount || 0;
+            return sum + amount;
+          },
+          0
+        );
+
+        const totalFundsRequired = campaignList.reduce(
+          (sum: number, campaign: Campaign) => {
+            const amount = campaign.attributes?.requested_fund_amount || 0;
+            return sum + amount;
+          },
+          0
+        );
+
+        // Calculate item-related stats
+        const totalItemsRequired = campaignList.reduce(
+          (sum: number, campaign: Campaign) => {
+            const amount = campaign.attributes?.requested_item_quantity || 0;
+            return sum + amount;
+          },
+          0
+        );
+
+        const totalItemsDonated = campaignList.reduce(
+          (sum: number, campaign: Campaign) => {
+            const amount = campaign.attributes?.donated_item_quantity || 0;
+            return sum + amount;
+          },
+          0
+        );
+
+        // Use API stats if available, otherwise use calculated stats
+        setStats({
+          totalUsers: apiStats?.total_users || totalUsers,
+          totalCampaigns: apiStats?.total_campaigns || totalCampaigns,
+          pendingCampaigns: apiStats?.pending_campaigns || pendingCampaigns,
+          activeCampaigns: apiStats?.active_campaigns || activeCampaigns,
+          totalFundsRaised: apiStats?.total_funds_raised || totalFundsRaised,
+          totalFundsRequired:
+            apiStats?.total_funds_required || totalFundsRequired,
+          totalItemsRequired:
+            apiStats?.total_items_required || totalItemsRequired,
+          totalItemsDonated: apiStats?.total_items_donated || totalItemsDonated,
+          pendingApplications: apiStats?.pending_applications || 0,
+        });
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -140,7 +189,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome, {user?.name || "Admin"}!
@@ -301,13 +350,13 @@ export default function AdminDashboard() {
                 {recentCampaigns.map((campaign) => {
                   const campaignData = campaign.attributes || campaign;
                   const organizerName =
-                    campaign.relationships?.organizer?.attriutes?.name ||
-                    campaign.relationships?.organizer?.name ||
+                    campaign.relationships?.organizer?.attributes?.name ||
+                    campaign.relationships?.organizer?.attributes?.name ||
                     "Anonymous";
 
                   return (
                     <div
-                      key={campaign.campaign_id}
+                      key={campaign.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center gap-4">
@@ -357,7 +406,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="text-right">
-                        {campaign.type === "fundraiser" ? (
+                        {campaign.attributes.requested_fund_amount >= 0 ? (
                           <>
                             <p className="font-bold">
                               Rp{" "}
@@ -386,7 +435,7 @@ export default function AdminDashboard() {
                         <div className="flex gap-1 mt-2">
                           <Link
                             to={`/campaigns/${
-                              campaignData.slug || campaign.campaign_id
+                              campaignData.slug || campaign.id
                             }`}
                           >
                             <Button variant="ghost" size="sm">

@@ -16,6 +16,10 @@ import {
   Clock,
   MoreHorizontal,
   Trash2,
+  Edit,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +27,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/Components/ui/table";
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -31,13 +43,13 @@ function formatPrice(value: number): string {
 export default function ManageDonations() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const fetchCampaigns = async () => {
     try {
-      setLoading(true);
       const response = await apiService.getCampaigns();
 
       const campaignList = Array.isArray(response?.data?.data)
@@ -53,8 +65,6 @@ export default function ManageDonations() {
       toast.error("Failed to load campaigns");
       setCampaigns([]);
       setFilteredCampaigns([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -65,13 +75,12 @@ export default function ManageDonations() {
   useEffect(() => {
     let filtered = campaigns;
 
-    
     if (searchTerm.trim() !== "") {
       filtered = filtered.filter((campaign) => {
         const campaignData = campaign.attributes || campaign;
         const organizerName =
-          campaign.relationships?.organizer?.attriutes?.name ||
-          campaign.relationships?.organizer?.attriutes?.name ||
+          campaign.relationships?.organizer?.attributes?.name ||
+          campaign.relationships?.organizer?.attributes?.name ||
           "";
 
         return (
@@ -82,12 +91,11 @@ export default function ManageDonations() {
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           organizerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          campaign.campaign_id?.toLowerCase().includes(searchTerm.toLowerCase())
+          campaign.id?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       });
     }
 
-    
     if (statusFilter !== "all") {
       filtered = filtered.filter((campaign) => {
         const campaignData = campaign.attributes || campaign;
@@ -96,6 +104,7 @@ export default function ManageDonations() {
     }
 
     setFilteredCampaigns(filtered);
+    setCurrentPage(1);
   }, [searchTerm, statusFilter, campaigns]);
 
   const handleStatusUpdate = async (campaignId: string, newStatus: string) => {
@@ -152,19 +161,27 @@ export default function ManageDonations() {
     }
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading campaigns...</div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCampaigns = filteredCampaigns.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  console.log(
+    "Campaigns:",
+    campaigns.map((c) => c)
+  );
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 w-full">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Manage Campaigns</h1>
@@ -172,6 +189,10 @@ export default function ManageDonations() {
               Review and manage all donation campaigns
             </p>
           </div>
+          <Button className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Campaign
+          </Button>
         </div>
 
         <Card>
@@ -211,10 +232,22 @@ export default function ManageDonations() {
           </CardContent>
         </Card>
 
-        {filteredCampaigns.length === 0 ? (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>
+                Campaigns ({filteredCampaigns.length} total)
+              </CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1}-
+                {Math.min(endIndex, filteredCampaigns.length)} of{" "}
+                {filteredCampaigns.length}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {filteredCampaigns.length === 0 ? (
+              <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
                   {campaigns.length === 0
                     ? "No campaigns found"
@@ -232,280 +265,264 @@ export default function ManageDonations() {
                   </Button>
                 ) : null}
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCampaigns.map((campaign) => {
-              const campaignData = campaign.attributes || campaign;
-              const organizerName =
-                campaign.relationships?.organizer?.attriutes?.name ||
-                campaign.relationships?.organizer?.attriutes?.name ||
-                "Anonymous";
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">#</TableHead>
+                        <TableHead className="min-w-[200px]">
+                          Campaign
+                        </TableHead>
+                        <TableHead>Organizer</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Progress</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentCampaigns.map((campaign, index) => {
+                        const campaignData = campaign.attributes || campaign;
+                        const organizerName =
+                          campaign.relationships?.organizer.attributes.name ||
+                          campaign.relationships?.organizer.attributes.name ||
+                          "Anonymous";
 
-              return (
-                <Card
-                  key={campaign.campaign_id}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={
-                        campaignData.header_image_url
-                          ? campaignData.header_image_url.startsWith(
-                              "/storage/"
-                            )
-                            ? `http://localhost:8000${campaignData.header_image_url}`
-                            : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                          : "/images/Charity1.jpeg"
-                      }
-                      alt={campaignData.title || "Campaign"}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/Charity1.jpeg";
-                      }}
-                    />
-                    <div className="absolute top-2 right-2">
-                      <Badge
-                        className={getStatusColor(
-                          campaignData.status || "pending"
-                        )}
-                      >
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(campaignData.status || "pending")}
-                          {campaignData.status || "pending"}
-                        </div>
-                      </Badge>
-                    </div>
-                    <div className="absolute top-2 left-2">
-                      <Badge variant="secondary">
-                        {campaign.type === "fundraiser"
-                          ? "Fundraiser"
-                          : "Items"}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="line-clamp-2 text-base">
-                        {campaignData.title || "Untitled Campaign"}
-                      </CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link
-                              to={`/campaigns/${
-                                campaignData.slug || campaign.campaign_id
-                              }`}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          {campaignData.status === "pending" && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleStatusUpdate(
-                                    campaign.campaign_id,
-                                    "on_progress"
-                                  )
-                                }
-                                className="text-green-600"
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleStatusUpdate(
-                                    campaign.campaign_id,
-                                    "rejected"
-                                  )
-                                }
-                                className="text-red-600"
-                              >
-                                <X className="w-4 h-4 mr-2" />
-                                Reject
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {campaignData.status === "on_progress" && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleStatusUpdate(
-                                  campaign.campaign_id,
-                                  "finished"
-                                )
-                              }
-                              className="text-blue-600"
-                            >
-                              <Check className="w-4 h-4 mr-2" />
-                              Mark Finished
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleDeleteCampaign(campaign.campaign_id)
-                            }
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {campaignData.description || "No description available"}
-                    </p>
-
-                    <div className="text-sm">
-                      <p>
-                        <strong>Organizer:</strong> {organizerName}
-                      </p>
-                      <p>
-                        <strong>Campaign ID:</strong> {campaign.campaign_id}
-                      </p>
-                      <p>
-                        <strong>Created:</strong>{" "}
-                        {new Date(
-                          campaignData.created_at || Date.now()
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    {campaign.type === "fundraiser" ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span>
-                            {campaignData.requested_fund_amount > 0
+                        const progressPercentage =
+                          campaignData.requested_fund_amount >= 0
+                            ? campaignData.requested_fund_amount > 0
                               ? Math.round(
                                   (campaignData.donated_fund_amount /
                                     campaignData.requested_fund_amount) *
                                     100
                                 )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                campaignData.requested_fund_amount > 0
-                                  ? Math.min(
-                                      (campaignData.donated_fund_amount /
-                                        campaignData.requested_fund_amount) *
-                                        100,
-                                      100
-                                    )
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>
-                            Rp{" "}
-                            {formatPrice(campaignData.donated_fund_amount || 0)}
-                          </span>
-                          <span>
-                            Rp{" "}
-                            {formatPrice(
-                              campaignData.requested_fund_amount || 0
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Items Collected</span>
-                          <span>
-                            {campaignData.requested_item_quantity > 0
-                              ? Math.round(
-                                  (campaignData.donated_item_quantity /
-                                    campaignData.requested_item_quantity) *
-                                    100
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                campaignData.requested_item_quantity > 0
-                                  ? Math.min(
-                                      (campaignData.donated_item_quantity /
-                                        campaignData.requested_item_quantity) *
-                                        100,
-                                      100
-                                    )
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>
-                            {campaignData.donated_item_quantity || 0} items
-                          </span>
-                          <span>
-                            {campaignData.requested_item_quantity || 0} needed
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                              : 0
+                            : campaignData.requested_item_quantity > 0
+                            ? Math.round(
+                                (campaignData.donated_item_quantity /
+                                  campaignData.requested_item_quantity) *
+                                  100
+                              )
+                            : 0;
 
-                    {campaignData.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleStatusUpdate(
-                              campaign.campaign_id,
-                              "on_progress"
-                            )
-                          }
-                          className="flex-1"
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() =>
-                            handleStatusUpdate(campaign.campaign_id, "rejected")
-                          }
-                          className="flex-1"
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                        return (
+                          <TableRow key={campaign.id}>
+                            <TableCell className="font-medium">
+                              {startIndex + index + 1}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={
+                                    campaignData.header_image_url
+                                      ? campaignData.header_image_url.startsWith(
+                                          "/storage/"
+                                        )
+                                        ? `http://localhost:8000${campaignData.header_image_url}`
+                                        : `http://localhost:8000/storage/${campaignData.header_image_url}`
+                                      : "/images/Charity1.jpeg"
+                                  }
+                                  alt={campaignData.title || "Campaign"}
+                                  className="w-12 h-12 object-cover rounded-md"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "/images/Charity1.jpeg";
+                                  }}
+                                />
+                                <div>
+                                  <div className="font-medium line-clamp-2 max-w-[200px]">
+                                    {campaignData.title || "Untitled Campaign"}
+                                  </div>
+                                  <div className="text-sm text-black">
+                                    ID: {campaign.id}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{organizerName}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {campaignData.requested_fund_amount >= 0
+                                  ? "Fundraiser"
+                                  : "Items"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={getStatusColor(
+                                  campaignData.status || "pending"
+                                )}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(
+                                    campaignData.status || "pending"
+                                  )}
+                                  {campaignData.status || "pending"}
+                                </div>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-20 bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-blue-600 h-2 rounded-full"
+                                      style={{
+                                        width: `${Math.min(
+                                          progressPercentage,
+                                          100
+                                        )}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium">
+                                    {progressPercentage}%
+                                  </span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {campaignData.requested_fund_amount > 0  ? (
+                                    <>
+                                      Rp{" "}
+                                      {formatPrice(
+                                        campaignData.donated_fund_amount || 0
+                                      )}{" "}
+                                      / Rp{" "}
+                                      {formatPrice(
+                                        campaignData.requested_fund_amount || 0
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {campaignData.donated_item_quantity || 0}{" "}
+                                      /
+                                      {campaignData.requested_item_quantity ||
+                                        0}{" "}
+                                      items
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {campaignData.created_at}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      to={`/campaigns/${
+                                        campaignData.slug || campaign.id
+                                      }`}
+                                    >
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      View Details
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  
+                                  {campaignData.status === "pending" && (
+                                    <>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleStatusUpdate(
+                                            campaign.id,
+                                            "on_progress"
+                                          )
+                                        }
+                                        className="text-green-600"
+                                      >
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Approve
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleStatusUpdate(
+                                            campaign.id,
+                                            "rejected"
+                                          )
+                                        }
+                                        className="text-red-600"
+                                      >
+                                        <X className="w-4 h-4 mr-2" />
+                                        Reject
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {campaignData.status === "on_progress" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusUpdate(
+                                          campaign.id,
+                                          "finished"
+                                        )
+                                      }
+                                      className="text-blue-600"
+                                    >
+                                      <Check className="w-4 h-4 mr-2" />
+                                      Mark Finished
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleDeleteCampaign(campaign.id)
+                                    }
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

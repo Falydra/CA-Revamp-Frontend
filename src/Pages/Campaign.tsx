@@ -78,11 +78,11 @@ export default function CampaignPage() {
               campaigns.map((campaign: Campaign) => {
                 return (
                   <div
-                    key={campaign.campaign_id}
+                    key={campaign.id}
                     className="w-11/12 h-[300px] bg-gray-300 rounded-lg flex relative flex-col"
                   >
                     <Link
-                      to={`/campaigns/${campaign.campaign_id}`}
+                      to={`/campaigns/${campaign.id}`}
                       className="w-full h-3/5 flex"
                     >
                       <img
@@ -124,7 +124,7 @@ export default function CampaignPage() {
                     </Link>
                     <div className="w-full h-2/5 bg-gray-300 flex-col items-start rounded-b-lg flex justify-start">
                       <Link
-                        to={`/campaigns/${campaign.campaign_id}`}
+                        to={`/campaigns/${campaign.id}`}
                         className="text-primary-bg hover:text-primary-accent leading-small px-4 text-lg font-bold cursor-pointer"
                       >
                         {campaign.attributes.title}

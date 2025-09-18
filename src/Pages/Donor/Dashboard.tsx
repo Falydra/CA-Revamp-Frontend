@@ -31,7 +31,6 @@ export default function DonorDashboard() {
           setUser(JSON.parse(storedUser));
         }
 
-        
         const campaignResponse = await apiService.getCampaigns();
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
@@ -212,13 +211,13 @@ export default function DonorDashboard() {
               {campaigns.map((campaign) => {
                 const campaignData = campaign.attributes || campaign;
                 const organizerName =
-                  campaign.relationships?.organizer?.attriutes?.name ||
-                  campaign.relationships?.organizer.attriutes?.name ||
+                  campaign.relationships?.organizer?.attributes?.name ||
+                  campaign.relationships?.organizer.attributes?.name ||
                   "Anonymous";
 
                 return (
                   <div
-                    key={campaign.campaign_id}
+                    key={campaign.id}
                     className="border rounded-lg p-4 hover:shadow-lg transition-shadow"
                   >
                     <img
@@ -335,11 +334,7 @@ export default function DonorDashboard() {
                       </span>
                     </div>
 
-                    <Link
-                      to={`/campaigns/${
-                        campaignData.slug || campaign.campaign_id
-                      }`}
-                    >
+                    <Link to={`/campaigns/${campaignData.slug || campaign.id}`}>
                       <Button
                         size="sm"
                         className="w-full"

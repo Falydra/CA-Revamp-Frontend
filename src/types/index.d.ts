@@ -1,14 +1,14 @@
 export type User = {
-  user_id: string; 
-  name: string; 
-  email: string; 
+  user_id: string;
+  name: string;
+  email: string;
   email_verified_at?: string | null;
-  password?: string; 
+  password?: string;
   remember_token?: string | null;
   created_at?: string;
   updated_at?: string;
-  roles?: Role[]; 
-  role?: string; 
+  roles?: Role[];
+  role?: string;
 };
 
 export type LoginResponse = {
@@ -20,18 +20,17 @@ export type LoginResponse = {
   };
 };
 
-
 export type Book = {
   isbn: string;
-  title: string; 
-  slug: string; 
-  synopsis?: string | null; 
-  author_1: string; 
-  author_2?: string | null; 
-  author_3?: string | null; 
-  published_year: string; 
-  cover_image_url?: string | null; 
-  price: number; 
+  title: string;
+  slug: string;
+  synopsis?: string | null;
+  author_1: string;
+  author_2?: string | null;
+  author_3?: string | null;
+  published_year: string;
+  cover_image_url?: string | null;
+  price: number;
   created_at?: string;
   updated_at?: string;
 };
@@ -41,9 +40,8 @@ export type BookWithAmount = {
   amount: number;
 };
 
-
 export type Role = {
-  role_id: string; 
+  role_id: string;
   name: string;
   created_at?: string;
   updated_at?: string;
@@ -52,10 +50,10 @@ export type Role = {
 export type Organizer = {
   type: User;
   id: string;
-  attriutes: {
+  attributes: {
     name: string;
-  }
-}
+  };
+};
 
 export type OrganizerApplication = {
   application_id: string;
@@ -74,7 +72,7 @@ export type OrganizerApplication = {
   city: string;
   province: string;
   postal_code: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   reviewed_at?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -90,92 +88,82 @@ export type AdminStats = {
   total_funds_raised: number;
 };
 
-
 export type Campaign = {
   type: string;
-  campaign_id: string;
+  id: string;
   attributes: {
     title: string;
     slug: string;
     description: string;
     header_image_url?: string | null;
     status: "pending" | "on_progress" | "finished" | "rejected";
-    requested_fund_amount: number; 
-    donated_fund_amount: number;   
+    requested_fund_amount: number;
+    donated_fund_amount: number;
     withdrawn_fund: number;
     requested_item_quantity: number;
     donated_item_quantity: number;
     created_at: string;
     reviewed_at: string;
-
   };
   relationships: {
     organizer: Organizer;
-  }
+  };
   links: string;
-  created_at?: string;
-
+  
 };
-
 
 export type Fund = {
   fund_id: string;
-  campaign_id: string; 
-  donor_id?: string | null; 
-  donor_name?: string | null; 
-  amount: number; 
-  status: string; 
+  id: string;
+  donor_id?: string | null;
+  donor_name?: string | null;
+  amount: number;
+  status: string;
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
-  
 
   campaign?: Campaign;
   donor?: User;
 };
 
-
 export type DonatedBook = {
   donated_book_id: string;
-  campaign_id: string;
-  book_isbn: string; 
-  donor_id?: string | null; 
-  donor_name?: string | null; 
+  id: string;
+  book_isbn: string;
+  donor_id?: string | null;
+  donor_name?: string | null;
   quantity: number;
-  status: string; 
+  status: string;
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
-  
- 
+
   campaign?: Campaign;
   book?: Book;
   donor?: User;
 };
 
-
 export type DonatedItem = {
   donated_item_id: string;
-  campaign_id: string;
-  requested_supply_id: string; 
-  donor_id?: string | null; 
+  id: string;
+  requested_supply_id: string;
+  donor_id?: string | null;
   donor_name?: string | null;
   quantity: number;
-  status: string; 
+  status: string;
   verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
-  
- 
+
   campaign?: Campaign;
   requested_supply?: RequestedSupply;
   donor?: User;
 };
 
-
 export type RequestedSupply = {
-  requested_supply_id: string; 
-  campaign_id: string; 
+  requested_supply_id: string;
+  id: string;
   name: string;
   description?: string | null;
   quantity_needed: number;
@@ -183,12 +171,10 @@ export type RequestedSupply = {
   unit: string;
   created_at?: string;
   updated_at?: string;
-  
- 
+
   campaign?: Campaign;
   donated_items?: DonatedItem[];
 };
-
 
 export type ApiResponse<T> = {
   success: boolean;
@@ -205,7 +191,6 @@ export type PaginatedResponse<T> = {
   next_page_url?: string | null;
   prev_page_url?: string | null;
 };
-
 
 export type Facility = {
   id: number | string;
@@ -260,4 +245,3 @@ export type Address = {
   province: string | null;
   postal_code: string | null;
 } | null;
-

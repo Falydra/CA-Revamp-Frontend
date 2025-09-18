@@ -27,18 +27,18 @@ export default function CampaignDetail() {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [donatedBooks, setDonatedBooks] = useState<DonatedBook[]>([]);
   const [donatedItems, setDonatedItems] = useState<DonatedItem[]>([]);
-  const [requestedSupplies, setRequestedSupplies] = useState<RequestedSupply[]>([]);
+  const [requestedSupplies, setRequestedSupplies] = useState<RequestedSupply[]>(
+    []
+  );
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
-  
   const [paymentModal, setPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [productDonationModal, setProductDonationModal] = useState(false);
 
-  
   const [selectedBooks, setSelectedBooks] = useState<
     { isbn: string; quantity: number }[]
   >([]);
@@ -59,13 +59,11 @@ export default function CampaignDetail() {
       try {
         setLoading(true);
 
-        
         const campaignResponse = await apiService.getCampaign(id);
         if (campaignResponse.data?.success && campaignResponse.data.data) {
           const campaignData = campaignResponse.data.data;
           setCampaign(campaignData);
 
-          
           if (campaignData.type === "fundraiser") {
             try {
               const fundsResponse = await apiService.getFunds(id);
@@ -77,7 +75,6 @@ export default function CampaignDetail() {
               setFunds([]);
             }
           } else if (campaignData.type === "product_donation") {
-            
             try {
               const [booksResponse, itemsResponse] = await Promise.all([
                 apiService.getDonatedBooks(id),
@@ -94,12 +91,12 @@ export default function CampaignDetail() {
               console.log("Could not fetch donated items:", err);
             }
 
-            
             try {
-              const [suppliesResponse, campaignBooksResponse] = await Promise.all([
-                apiService.getRequestedSupplies(id),
-                apiService.getRequestedBooks(id),
-              ]);
+              const [suppliesResponse, campaignBooksResponse] =
+                await Promise.all([
+                  apiService.getRequestedSupplies(id),
+                  apiService.getRequestedBooks(id),
+                ]);
 
               if (suppliesResponse.data?.success) {
                 setRequestedSupplies(suppliesResponse.data.data || []);
@@ -124,7 +121,6 @@ export default function CampaignDetail() {
   }, [id]);
 
   useEffect(() => {
-    
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -136,11 +132,10 @@ export default function CampaignDetail() {
   }, []);
 
   useEffect(() => {
-    
     if (!campaign?.attributes?.header_image_url) return;
 
     intervalRef.current = setInterval(() => {
-      setCurrentImageIdx((idx) => (idx + 1) % 1); 
+      setCurrentImageIdx((idx) => (idx + 1) % 1);
     }, 3000);
 
     return () => {
@@ -201,7 +196,7 @@ export default function CampaignDetail() {
 
     try {
       const payload = {
-        campaign_id: campaign.campaign_id,
+        id: campaign.id,
         donor_id: user.user_id,
         amount: paymentAmount,
         status: "pending",
@@ -213,7 +208,7 @@ export default function CampaignDetail() {
         toast.success("Donation submitted successfully!");
         setPaymentModal(false);
         setPaymentAmount(0);
-        
+
         window.location.reload();
       } else {
         toast.error("Failed to submit donation");
@@ -238,10 +233,9 @@ export default function CampaignDetail() {
     try {
       const promises = [];
 
-      
       for (const bookSelection of selectedBooks) {
         const payload = {
-          campaign_id: campaign.campaign_id,
+          id: campaign.id,
           book_isbn: bookSelection.isbn,
           donor_id: user.user_id,
           donor_name: donorName || user.name,
@@ -252,10 +246,9 @@ export default function CampaignDetail() {
         promises.push(apiService.createDonatedBook(payload));
       }
 
-      
       for (const supplySelection of selectedSupplies) {
         const payload = {
-          campaign_id: campaign.campaign_id,
+          id: campaign.id,
           requested_supply_id: supplySelection.requested_supply_id,
           donor_id: user.user_id,
           donor_name: donorName || user.name,
@@ -273,7 +266,7 @@ export default function CampaignDetail() {
       setSelectedBooks([]);
       setSelectedSupplies([]);
       setDonorName("");
-      
+
       window.location.reload();
     } catch (error) {
       console.error("Product donation error:", error);
@@ -310,13 +303,17 @@ export default function CampaignDetail() {
     campaign.type === "fundraiser"
       ? campaign.attributes.requested_fund_amount > 0
         ? Math.min(
-            (campaign.attributes.donated_fund_amount / campaign.attributes.requested_fund_amount) * 100,
+            (campaign.attributes.donated_fund_amount /
+              campaign.attributes.requested_fund_amount) *
+              100,
             100
           )
         : 0
       : campaign.attributes.requested_item_quantity > 0
       ? Math.min(
-          (campaign.attributes.donated_item_quantity / campaign.attributes.requested_item_quantity) * 100,
+          (campaign.attributes.donated_item_quantity /
+            campaign.attributes.requested_item_quantity) *
+            100,
           100
         )
       : 0;
@@ -340,7 +337,9 @@ export default function CampaignDetail() {
               <img
                 src={
                   campaign.attributes.header_image_url
-                    ? campaign.attributes.header_image_url.startsWith("/storage/")
+                    ? campaign.attributes.header_image_url.startsWith(
+                        "/storage/"
+                      )
                       ? `http://localhost:8000${campaign.attributes.header_image_url}`
                       : `http://localhost:8000/storage/${campaign.attributes.header_image_url}`
                     : "/images/Charity1.jpeg"
@@ -364,8 +363,8 @@ export default function CampaignDetail() {
                 alt=""
               />
               <h3 className="text-primary-fg w-full my-auto font-semibold">
-                {campaign.relationships?.organizer?.attriutes?.name ||
-                  campaign.relationships?.organizer?.name ||
+                {campaign.relationships?.organizer?.attributes?.name ||
+                  campaign.relationships?.organizer?.attributes.name ||
                   "Anonymous"}
               </h3>
             </div>
@@ -600,7 +599,9 @@ export default function CampaignDetail() {
                 {campaign.type === "fundraiser"
                   ? `Rp ${formatPrice(
                       campaign.attributes.donated_fund_amount
-                    )} / Rp ${formatPrice(campaign.attributes.requested_fund_amount)}`
+                    )} / Rp ${formatPrice(
+                      campaign.attributes.requested_fund_amount
+                    )}`
                   : `${campaign.attributes.donated_item_quantity} / ${campaign.attributes.requested_item_quantity} Produk`}
               </h2>
 
@@ -637,7 +638,6 @@ export default function CampaignDetail() {
                         </div>
                       ))}
 
-                      {/* Display recent book donations */}
                       {donatedBooks.slice(0, 3).map((donation, idx) => (
                         <div
                           key={idx}
@@ -661,7 +661,6 @@ export default function CampaignDetail() {
                         </div>
                       ))}
 
-                      {/* Display recent item donations */}
                       {donatedItems.slice(0, 3).map((donation, idx) => (
                         <div
                           key={idx}
@@ -711,7 +710,6 @@ export default function CampaignDetail() {
           </div>
         </div>
 
-        {/* Product Donation Modal */}
         {productDonationModal && user && (
           <div className="fixed z-50 backdrop-blur-md inset-0 bg-black bg-opacity-50 flex text-primary-bg items-center justify-center">
             <div className="bg-white w-1/3 h-fit rounded-xl flex flex-col p-4 overflow-y-auto">
@@ -803,15 +801,21 @@ export default function CampaignDetail() {
                 <h1 className="text-xl font-bold self-start">Detail Donasi</h1>
                 <div className="w-full h-[75px] flex rounded-xl items-center flex-row gap-4 justify-start">
                   <div className="w-12 h-12 flex items-center aspect-square justify-center rounded-full bg-primary-accent cursor-pointer text-white">
-                    {campaign.relationships?.organizer?.attriutes?.name?.charAt(0) ||
-                      campaign.relationships?.organizer?.name?.charAt(0) ||
+                    {campaign.relationships?.organizer?.attributes?.name?.charAt(
+                      0
+                    ) ||
+                      campaign.relationships?.organizer?.attributes?.name?.charAt(
+                        0
+                      ) ||
                       "O"}
                   </div>
                   <div className="w-full flex-col items-start justify-center flex">
-                    <h1 className="text-lg font-bold">{campaign.attributes.title}</h1>
+                    <h1 className="text-lg font-bold">
+                      {campaign.attributes.title}
+                    </h1>
                     <h1 className="text-sm font-semibold">
-                      {campaign.relationships?.organizer?.attriutes?.name ||
-                        campaign.relationships?.organizer?.name ||
+                      {campaign.relationships?.organizer?.attributes?.name ||
+                        campaign.relationships?.organizer?.attributes?.name ||
                         "Anonymous"}
                     </h1>
                   </div>

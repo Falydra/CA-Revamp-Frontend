@@ -14,7 +14,6 @@ api.interceptors.request.use((config) => {
 });
 
 export const apiService = {
-  
   register: async (userData: {
     username: string;
     email: string;
@@ -113,7 +112,7 @@ export const apiService = {
         withCredentials: true,
       }
     );
-   
+
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user");
     localStorage.removeItem("roles");
@@ -140,7 +139,6 @@ export const apiService = {
     }
   },
 
-  
   createCampaign: async (campaignData: FormData) => {
     try {
       const response = await api.post("/campaigns", campaignData, {
@@ -155,7 +153,6 @@ export const apiService = {
     }
   },
 
-  
   updateCampaign: async (id: string, campaignData: FormData) => {
     try {
       const response = await api.put(`/campaigns/${id}`, campaignData, {
@@ -170,7 +167,6 @@ export const apiService = {
     }
   },
 
-  
   deleteCampaign: async (id: string) => {
     try {
       const response = await api.delete(`/campaigns/${id}`);
@@ -183,7 +179,7 @@ export const apiService = {
 
   getFunds: async (campaignId?: string) => {
     try {
-      const url = campaignId ? `/funds?campaign_id=${campaignId}` : "/funds";
+      const url = campaignId ? `/funds?id=${campaignId}` : "/funds";
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -192,7 +188,6 @@ export const apiService = {
     }
   },
 
-  
   createFund: async (fundData: any) => {
     try {
       const response = await api.post("/funds", fundData);
@@ -205,7 +200,9 @@ export const apiService = {
 
   getDonatedBooks: async (campaignId?: string) => {
     try {
-      const url = campaignId ? `/donated-books?campaign_id=${campaignId}` : "/donated-books";
+      const url = campaignId
+        ? `/donated-books?id=${campaignId}`
+        : "/donated-books";
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -214,7 +211,6 @@ export const apiService = {
     }
   },
 
-  
   createDonatedBook: async (bookData: any) => {
     try {
       const response = await api.post("/donated-books", bookData);
@@ -227,7 +223,9 @@ export const apiService = {
 
   getDonatedItems: async (campaignId?: string) => {
     try {
-      const url = campaignId ? `/donated-items?campaign_id=${campaignId}` : "/donated-items";
+      const url = campaignId
+        ? `/donated-items?id=${campaignId}`
+        : "/donated-items";
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -236,7 +234,6 @@ export const apiService = {
     }
   },
 
-  
   createDonatedItem: async (itemData: any) => {
     try {
       const response = await api.post("/donated-items", itemData);
@@ -247,7 +244,6 @@ export const apiService = {
     }
   },
 
-  
   getBooks: async () => {
     try {
       const response = await api.get("/books");
@@ -258,7 +254,6 @@ export const apiService = {
     }
   },
 
-  
   getBook: async (isbn: string) => {
     try {
       const response = await api.get(`/books/${isbn}`);
@@ -284,8 +279,8 @@ export const apiService = {
         return res.data;
       } catch (err: any) {
         const status = err?.response?.status;
-        if (status === 401) throw err; 
-        if (status === 404) continue;  
+        if (status === 401) throw err;
+        if (status === 404) continue;
         throw err;
       }
     }
@@ -295,25 +290,26 @@ export const apiService = {
 
   getOrganizerApplications: (page: number = 1, perPage: number = 10) =>
     api.get(`/admin/organizer-applications?page=${page}&per_page=${perPage}`),
-  
-  approveOrganizerApplication: (id: string) => 
+
+  approveOrganizerApplication: (id: string) =>
     api.post(`/admin/organizer-applications/${id}/approve`),
-  
-  rejectOrganizerApplication: (id: string, reason?: string) => 
+
+  rejectOrganizerApplication: (id: string, reason?: string) =>
     api.post(`/admin/organizer-applications/${id}/reject`, { reason }),
 
   getRequestedSupplies: (campaignId: string) =>
     api.get(`/campaigns/${campaignId}/requested-supplies`),
-  
+
   getRequestedBooks: (campaignId: string) =>
     api.get(`/campaigns/${campaignId}/requested-books`),
 
   admin: {
-    getUsers: async (page = 1, per_page = 10) => {
+     getUsers: async (page = 1, per_page = 10) => {
       try {
         const response = await api.get("/admin/users", {
-          params: { page, per_page }
+          params: { page, per_page },
         });
+        console.log("Get users response:", response.data);  
         return response.data;
       } catch (error) {
         console.error("Get users error:", error);
@@ -340,13 +336,20 @@ export const apiService = {
         throw error;
       }
     },
-    
-    updateCampaignStatus: async (campaignId: string, status: string, notes?: string) => {
+
+    updateCampaignStatus: async (
+      campaignId: string,
+      status: string,
+      notes?: string
+    ) => {
       try {
-        const response = await api.put(`/admin/campaigns/${campaignId}/status`, {
-          status,
-          notes
-        });
+        const response = await api.put(
+          `/admin/campaigns/${campaignId}/status`,
+          {
+            status,
+            notes,
+          }
+        );
         return response.data;
       } catch (error) {
         console.error("Update campaign status error:", error);
@@ -363,11 +366,11 @@ export const apiService = {
         throw error;
       }
     },
-    
+
     getOrganizerApplications: async (page = 1, per_page = 10) => {
       try {
         const response = await api.get("/admin/organizer-applications", {
-          params: { page, per_page }
+          params: { page, per_page },
         });
         return response.data;
       } catch (error) {
@@ -376,19 +379,26 @@ export const apiService = {
       }
     },
 
-    updateApplicationStatus: async (applicationId: string, status: string, notes?: string) => {
+    updateApplicationStatus: async (
+      applicationId: string,
+      status: string,
+      notes?: string
+    ) => {
       try {
-        const response = await api.put(`/admin/organizer-applications/${applicationId}`, {
-          status,
-          notes
-        });
+        const response = await api.put(
+          `/admin/organizer-applications/${applicationId}`,
+          {
+            status,
+            notes,
+          }
+        );
         return response.data;
       } catch (error) {
         console.error("Update application status error:", error);
         throw error;
       }
     },
-    
+
     getDashboardStats: async () => {
       try {
         const response = await api.get("/admin/dashboard-stats");
@@ -398,11 +408,11 @@ export const apiService = {
         throw error;
       }
     },
-    
+
     getDonations: async (page = 1, per_page = 10) => {
       try {
         const response = await api.get("/admin/donations", {
-          params: { page, per_page }
+          params: { page, per_page },
         });
         return response.data;
       } catch (error) {
@@ -413,9 +423,12 @@ export const apiService = {
 
     updateDonationStatus: async (donationId: string, status: string) => {
       try {
-        const response = await api.put(`/admin/donations/${donationId}/status`, {
-          status
-        });
+        const response = await api.put(
+          `/admin/donations/${donationId}/status`,
+          {
+            status,
+          }
+        );
         return response.data;
       } catch (error) {
         console.error("Update donation status error:", error);

@@ -8,6 +8,7 @@ import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import Checkbox from "@/Components/Checkbox";
 import { apiService } from "@/services/api";
+import type { Role } from "@/types";
 
 interface LoginFormProps {
   setShowLoginForm: (val: boolean) => void;
@@ -36,28 +37,32 @@ export default function LoginForm({
     setErrors({});
 
     try {
-      
       const loginResponse = await apiService.login({
         email: data.email,
         password: data.password,
       });
 
       console.log("Login successful:", loginResponse);
-
       
+
       if (loginResponse.success && loginResponse.data) {
-        const { user, token } = loginResponse.data;
+      const { user, token } = loginResponse.data;
 
-       
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("roles", user.role || "donor");
-        localStorage.setItem("auth_token", token);
+    
+      localStorage.setItem("user", JSON.stringify(user));
 
-        console.log("User data stored in localStorage");
-      }
-
+     
+      const roleNames = loginResponse.data.user.roles.map((role: Role) => role.name);
       
-      navigate("/");
+     
+      localStorage.setItem("roles", JSON.stringify(roleNames));
+      localStorage.setItem("auth_token", token);
+
+      console.log("Stored user:", user);
+      console.log("Stored roles:", roleNames);
+    }
+
+    navigate("/");
     } catch (error) {
       const err = error as AxiosError;
       console.error("Login error:", err);
@@ -65,7 +70,6 @@ export default function LoginForm({
       if (err.response) {
         console.log("Error response:", err.response.data);
 
-        
         if (err.response.status === 422) {
           const responseData = err.response.data as {
             errors?: { email?: string; password?: string };
@@ -81,7 +85,6 @@ export default function LoginForm({
           setErrors({ email: "Login failed. Please try again." });
         }
       } else {
-        
         setErrors({ email: "Network error. Please check your connection." });
       }
     } finally {
@@ -102,7 +105,11 @@ export default function LoginForm({
       </div>
       <form onSubmit={submit} className="w-full">
         <div className="text-start text-blue-500">
-          <InputLabel htmlFor="email" value="Email" className="text-primary-bg" />
+          <InputLabel
+            htmlFor="email"
+            value="Email"
+            className="text-primary-bg"
+          />
           <TextInput
             id="email"
             type="email"

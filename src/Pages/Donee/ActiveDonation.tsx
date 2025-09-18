@@ -48,7 +48,6 @@ export default function ActiveDonation() {
   useEffect(() => {
     let filtered = campaigns;
 
-    
     if (searchTerm.trim() !== "") {
       filtered = filtered.filter((campaign) => {
         const campaignData = campaign.attributes || campaign;
@@ -63,7 +62,6 @@ export default function ActiveDonation() {
       });
     }
 
-    
     if (statusFilter !== "all") {
       filtered = filtered.filter((campaign) => {
         const campaignData = campaign.attributes || campaign;
@@ -190,13 +188,13 @@ export default function ActiveDonation() {
             {filteredCampaigns.map((campaign) => {
               const campaignData = campaign.attributes || campaign;
               const organizerName =
-                campaign.relationships?.organizer?.attriutes?.name ||
-                campaign.relationships?.organizer?.attriutes.name ||
+                campaign.relationships?.organizer?.attributes?.name ||
+                campaign.relationships?.organizer?.attributes.name ||
                 "Anonymous";
 
               return (
                 <Card
-                  key={campaign.campaign_id}
+                  key={campaign.id}
                   className="hover:shadow-lg transition-shadow"
                 >
                   <div className="aspect-video relative overflow-hidden rounded-t-lg">
@@ -339,9 +337,7 @@ export default function ActiveDonation() {
 
                     <div className="flex gap-2">
                       <Link
-                        to={`/campaigns/${
-                          campaignData.slug || campaign.campaign_id
-                        }`}
+                        to={`/campaigns/${campaignData.slug || campaign.id}`}
                         className="flex-1"
                       >
                         <Button variant="outline" className="w-full">
@@ -350,7 +346,7 @@ export default function ActiveDonation() {
                       </Link>
                       {campaignData.status === "on_progress" && (
                         <Link
-                          to={`/dashboard/donee/edit-donation/${campaign.campaign_id}`}
+                          to={`/dashboard/donee/edit-donation/${campaign.id}`}
                           className="flex-1"
                         >
                           <Button className="w-full">Edit Campaign</Button>

@@ -74,29 +74,25 @@ function getIconForItem(item: ConfigMenuItem): LucideIcon {
   return Home;
 }
 
-function getGroupsForRole(role: string): SidebarGroupConfig[] {
-  switch (role) {
-    case "donor": {
-      const mainItems = DonorPage.mainPage.items ?? [];
-      const profileItems = (DonorPage.mainPage as any).profileItems ?? [];
-      const groups: SidebarGroupConfig[] = [];
-      if (mainItems.length) groups.push({ label: "Menu", items: mainItems });
-      if (profileItems.length) groups.push({ label: "Profile", items: profileItems });
-      return groups;
-    }
-    case "donee":
-      return [{ label: "Menu", items: DoneePage.mainPage.items }];
-    case "admin":
-      return [{ label: "Menu", items: AdminPage.mainPage.items }];
-    case "superadmin":
-      return [{ label: "Menu", items: SuperAdminPage.mainPage.items }];
-    default:
-      return [
-        {
-          label: "Menu",
-          items: [{ title: "Dashboard", url: "/dashboard", isActive: false }],
-        },
-      ];
+function getGroupsForRole(role: string[]): SidebarGroupConfig[] {
+  if (role.includes("superadmin")) {
+    return [
+      { label: "Menu", items: SuperAdminPage.mainPage.items },
+    ];
+  } else if (role.includes("admin")) {
+    return [
+      { label: "Menu", items: AdminPage.mainPage.items },
+    ];
+  } else if (role.includes("organizer")) {
+    return [
+      { label: "Menu", items: DoneePage.mainPage.items },
+    ];
+  } else if (role.includes("donor")) {
+    return [
+      { label: "Menu", items: DonorPage.mainPage.items },
+    ];
+  } else {
+    return [];
   }
 }
 

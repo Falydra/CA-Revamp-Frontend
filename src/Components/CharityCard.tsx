@@ -12,7 +12,7 @@ import { apiService } from "@/services/api";
 
 type CampaignCard = {
   id?: string;
-  campaign_id?: string;
+  id?: string;
   attributes?: {
     title?: string;
     description?: string;
@@ -20,7 +20,7 @@ type CampaignCard = {
     requested_fund_amount?: number;
     donated_fund_amount?: number;
   };
-  
+
   title?: string;
   description?: string;
   header_image_url?: string | null;
@@ -65,15 +65,23 @@ export function CardWithForm() {
 
   const title = attr.title ? attr.title : "Campaign";
   const description = attr.description ? attr.description : "";
-  const headerImage = attr.header_image_url ? attr.header_image_url : "/images/Charity1.jpeg";
+  const headerImage = attr.header_image_url
+    ? attr.header_image_url
+    : "/images/Charity1.jpeg";
 
-  const donatedAmount = typeof attr.donated_fund_amount === "number" ? attr.donated_fund_amount : 0;
-  const requestedAmount = typeof attr.requested_fund_amount === "number" ? attr.requested_fund_amount : 0;
+  const donatedAmount =
+    typeof attr.donated_fund_amount === "number" ? attr.donated_fund_amount : 0;
+  const requestedAmount =
+    typeof attr.requested_fund_amount === "number"
+      ? attr.requested_fund_amount
+      : 0;
 
   const progressPercentage =
-    requestedAmount > 0 ? Math.min(Math.round((donatedAmount / requestedAmount) * 100), 100) : 0;
+    requestedAmount > 0
+      ? Math.min(Math.round((donatedAmount / requestedAmount) * 100), 100)
+      : 0;
 
-  const displayId = campaign.campaign_id ? campaign.campaign_id : campaign.id;
+  const displayId = campaign.id ? campaign.id : campaign.id;
 
   const words = description ? description.split(" ") : [];
   const limited = words.slice(0, 75).join(" ");
@@ -106,14 +114,15 @@ export function CardWithForm() {
 
                 <div className="w-full flex flex-row justify-start">
                   <h2 className="font-thin text-xs self-center text-center">
-                    Rp {formatPrice(donatedAmount)} / Rp {formatPrice(requestedAmount)}
+                    Rp {formatPrice(donatedAmount)} / Rp{" "}
+                    {formatPrice(requestedAmount)}
                   </h2>
                 </div>
               </div>
 
               <Link
                 className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"
-                to={`/campaigns/${campaign.attributes?.slug || campaign.slug || displayId}`}
+                to={`/campaigns/${campaign.id || campaign.id || displayId}`}
               >
                 <h3 className="text-md font-semibold text-primary-fg text-center items-center justify-center">
                   Detail
@@ -128,7 +137,8 @@ export function CardWithForm() {
               alt={title}
               className="w-full h-full object-cover rounded-r-xl"
               onError={(e) => {
-                e.currentTarget.src = "https://via.placeholder.com/400x300?text=Campaign+Image";
+                e.currentTarget.src =
+                  "https://via.placeholder.com/400x300?text=Campaign+Image";
               }}
             />
           </div>

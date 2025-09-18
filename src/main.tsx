@@ -13,6 +13,11 @@ import DoneeRegister from "@/Pages/Donor/DoneeRegister";
 import DoneeDashboard from "@/Pages/Donee/Dashboard";
 import ActiveDonation from "@/Pages/Donee/ActiveDonation";
 import DoneeProfile from "@/Pages/Donee/Profile";
+import AdminDashboard from "@/Pages/Admin/Dashboard";
+import ManageApplication from "@/Pages/Admin/ManageApplication";
+import ManageDonations from "@/Pages/Admin/ManageDonations";
+import ManageUsers from "@/Pages/Admin/ManageUsers";
+import AdminProfile from "@/Pages/Admin/Profile";
 
 
 import "./index.css";
@@ -38,6 +43,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
              <Route path="/dashboard/donee" element={<DoneeDashboard />} />
             <Route path="/dashboard/donee/donations" element={<ActiveDonation />} />
             <Route path="/dashboard/donee/profile" element={<DoneeProfile />} />
+            <Route path="/dashboard/admin" element={<AdminDashboard />} />
+            <Route path="/dashboard/admin/manage-application" element={<ManageApplication />} />
+            <Route path="/dashboard/admin/manage-donations" element={<ManageDonations />} />
+            <Route path="/dashboard/admin/manage-users" element={<ManageUsers />} />
+            <Route path="/dashboard/admin/profile" element={<AdminProfile />} />
+
+            
           </Routes>
         </Suspense>
       </ErrorBoundary>

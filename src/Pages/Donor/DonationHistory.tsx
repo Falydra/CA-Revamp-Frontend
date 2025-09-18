@@ -145,7 +145,7 @@ export default function DonationHistory() {
                         </div>
 
                         <p className="text-sm text-muted-foreground mb-2">
-                          Donation ID: {donation.campaign_id || "N/A"}
+                          Donation ID: {donation.id || "N/A"}
                         </p>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -186,12 +186,12 @@ export default function DonationHistory() {
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
-                        {donation.campaign_id && (
+                        {donation.id && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() =>
-                              (window.location.href = `/campaigns/${donation.campaign_id}`)
+                              (window.location.href = `/campaigns/${donation.id}`)
                             }
                           >
                             View Campaign
