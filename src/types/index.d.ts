@@ -52,8 +52,9 @@ export type Organizer = {
   id: string;
   attributes: {
     name: string;
-  };
-};
+    profile_image_url: string;
+  }
+}
 
 export type OrganizerApplication = {
   application_id: string;
@@ -92,6 +93,7 @@ export type Campaign = {
   type: string;
   id: string;
   attributes: {
+    campaign_type: string,
     title: string;
     slug: string;
     description: string;
@@ -109,7 +111,8 @@ export type Campaign = {
     organizer: Organizer;
   };
   links: string;
-  
+
+  created_at?: string;
 };
 
 export type Fund = {
@@ -127,6 +130,22 @@ export type Fund = {
   donor?: User;
 };
 
+
+export type FundSummary = {
+  type: string;
+  id: string;
+  attributes: {
+    amount: number;
+    updated_at: string;
+  };
+  donor: {
+    name: string;
+    profile_image_url: string;
+  }
+}
+
+
+
 export type DonatedBook = {
   donated_book_id: string;
   id: string;
@@ -143,6 +162,22 @@ export type DonatedBook = {
   book?: Book;
   donor?: User;
 };
+
+
+
+export type DonatedItemSummary = {
+  type: string;
+  id: string;
+  attributes: {
+    quantity: number;
+    updated_at: string;
+  };
+  donor: {
+    name: string;
+    profile_image_url: string;
+  }
+}
+
 
 export type DonatedItem = {
   donated_item_id: string;
@@ -162,6 +197,7 @@ export type DonatedItem = {
 };
 
 export type RequestedSupply = {
+
   requested_supply_id: string;
   id: string;
   name: string;
@@ -174,7 +210,39 @@ export type RequestedSupply = {
 
   campaign?: Campaign;
   donated_items?: DonatedItem[];
+  type: string;
+  id: string;
+  attributes: {
+    name: string;
+    description: string;
+    price: number;
+    requested_quantity: number;
+    donated_quantity: number;
+  }
 };
+
+export type RequestedBook = {
+  type: string;
+  id: string;
+  attributes: {
+    isbn: string;
+    title: string;
+    synopsis: string;
+    slug: string;
+    authors: {
+      author_1: string;
+      author_2?: string | null;
+      author_3: string | null;
+    },
+    published_year: number;
+    cover_image_url: string;
+    price: number;
+    requested_quantity: number;
+    donated_quantity: number;
+  }
+}
+
+
 
 export type ApiResponse<T> = {
   success: boolean;

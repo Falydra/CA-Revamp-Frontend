@@ -56,18 +56,15 @@ export const apiService = {
 
   login: async ({ email, password }: { email: string; password: string }) => {
     try {
-      console.log("Getting CSRF cookie...");
       await axios.get("http://localhost:8000/sanctum/csrf-cookie", {
         withCredentials: true,
       });
-      console.log("CSRF cookie obtained successfully");
 
       const csrfToken = document.cookie
         .split("; ")
         .find((row) => row.startsWith("XSRF-TOKEN="))
         ?.split("=")[1];
 
-      console.log("Attempting login...");
       const response = await axios.post(
         "http://localhost:8000/api/v1/login",
         {
@@ -83,7 +80,6 @@ export const apiService = {
           },
         }
       );
-      console.log("Login response:", response.data);
 
       return response.data;
     } catch (error) {
@@ -104,6 +100,7 @@ export const apiService = {
 
   logout: async () => {
     const token = localStorage.getItem("auth_token");
+    console.log(api.getUri());
     await api.post(
       "/logout",
       {},
@@ -118,9 +115,14 @@ export const apiService = {
     localStorage.removeItem("roles");
   },
 
-  getCampaigns: async () => {
+  getCampaigns: async (params: { type?: string; search?: string }) => {
     try {
-      const response = await api.get("/campaigns");
+      const response = await api.get("/campaigns", {
+        params: {
+          type: params.type || "",
+          search: params.search || "",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Get campaigns error:", error);
@@ -177,10 +179,14 @@ export const apiService = {
     }
   },
 
-  getFunds: async (campaignId?: string) => {
+  getFunds: async (campaignId: string, params: { status?: string; }) => {
     try {
-      const url = campaignId ? `/funds?id=${campaignId}` : "/funds";
-      const response = await api.get(url);
+      const url = `/campaigns/${campaignId}/funds`;
+      const response = await api.get(url, {
+        params: {
+          status: params.status || ""
+        }
+      });
       return response.data;
     } catch (error) {
       console.error("Get funds error:", error);
@@ -201,7 +207,7 @@ export const apiService = {
   getDonatedBooks: async (campaignId?: string) => {
     try {
       const url = campaignId
-        ? `/donated-books?id=${campaignId}`
+        ? `/donated-books?campaign_id=${campaignId}`
         : "/donated-books";
       const response = await api.get(url);
       return response.data;
@@ -224,7 +230,7 @@ export const apiService = {
   getDonatedItems: async (campaignId?: string) => {
     try {
       const url = campaignId
-        ? `/donated-items?id=${campaignId}`
+        ? `/donated-items?campaign_id=${campaignId}`
         : "/donated-items";
       const response = await api.get(url);
       return response.data;
@@ -302,6 +308,54 @@ export const apiService = {
 
   getRequestedBooks: (campaignId: string) =>
     api.get(`/campaigns/${campaignId}/requested-books`),
+
+  createDonation: async (campaignId: string, donationData: FormData) => {
+    try {
+      const response = await api.post(
+        `/campaigns/${campaignId}/donations`,
+        donationData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Create Donation Error: ", error);
+      throw error;
+    }
+  },
+
+  getFundsCampaignHistory: async (campaignId: string, params: { status?: string; }) => {
+    try {
+      const url = `/campaigns/${campaignId}/funds`;
+      const response = await api.get(url, {
+        params: {
+          status: params.status || ""
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Get funds error:", error);
+      throw error;
+    }
+  },
+
+  getItemsCampaignHistory: async (campaignId: string, params: { status?: string; }) => {
+    try {
+      const url = `/campaigns/${campaignId}/items`;
+      const response = await api.get(url, {
+        params: {
+          status: params.status || ""
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Get funds error:", error);
+      throw error;
+    }
+  },
 
   admin: {
      getUsers: async (page = 1, per_page = 10) => {

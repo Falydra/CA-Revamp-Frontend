@@ -15,6 +15,7 @@ interface LoginFormProps {
   setShowSignUpForm: (val: boolean) => void;
 }
 
+
 export default function LoginForm({
   setShowLoginForm,
   setShowSignUpForm,
@@ -43,26 +44,18 @@ export default function LoginForm({
       });
 
       console.log("Login successful:", loginResponse);
-      
 
       if (loginResponse.success && loginResponse.data) {
       const { user, token } = loginResponse.data;
 
-    
-      localStorage.setItem("user", JSON.stringify(user));
+        const roleNames = loginResponse.data.user.roles.map((role: Role) => role.name);
+       
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("roles", JSON.stringify(roleNames));
+        localStorage.setItem("auth_token", token);
+      }
 
-     
-      const roleNames = loginResponse.data.user.roles.map((role: Role) => role.name);
-      
-     
-      localStorage.setItem("roles", JSON.stringify(roleNames));
-      localStorage.setItem("auth_token", token);
-
-      console.log("Stored user:", user);
-      console.log("Stored roles:", roleNames);
-    }
-
-    navigate("/");
+      navigate("/");
     } catch (error) {
       const err = error as AxiosError;
       console.error("Login error:", err);

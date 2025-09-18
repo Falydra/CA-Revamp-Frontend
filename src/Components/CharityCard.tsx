@@ -6,62 +6,24 @@ import {
   CardTitle,
 } from "@/Components/ui/card";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import ProgressBar from "@ramonak/react-progress-bar";
-import { apiService } from "@/services/api";
+import ProgressBar from "@/Components/ui/progress-bar";
+import type { Campaign } from "@/types";
 
-type CampaignCard = {
-  id?: string;
-  id?: string;
-  attributes?: {
-    title?: string;
-    description?: string;
-    header_image_url?: string | null;
-    requested_fund_amount?: number;
-    donated_fund_amount?: number;
-  };
 
-  title?: string;
-  description?: string;
-  header_image_url?: string | null;
-  requested_fund_amount?: number;
-  donated_fund_amount?: number;
-};
+interface CardWithFormProps {
+  campaign: Campaign | null;
+}
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export function CardWithForm() {
-  const [campaign, setCampaign] = useState<CampaignCard | null>(null);
-
-  useEffect(() => {
-    const loadCampaign = async () => {
-      try {
-        const response = await apiService.getCampaigns();
-
-        const list = Array.isArray(response?.data?.data)
-          ? response.data.data
-          : Array.isArray(response?.data)
-          ? response.data
-          : [];
-
-        if (Array.isArray(list) && list.length > 0) {
-          setCampaign(list[0] as CampaignCard);
-        }
-      } catch (error) {
-        console.error("Error fetching campaign:", error);
-      }
-    };
-
-    loadCampaign();
-  }, []);
-
+export function CardWithForm({ campaign }: CardWithFormProps) {
   if (!campaign) {
     return null;
   }
 
-  const attr = campaign.attributes ? campaign.attributes : campaign;
+  const attr = campaign.attributes;
 
   const title = attr.title ? attr.title : "Campaign";
   const description = attr.description ? attr.description : "";
@@ -69,19 +31,9 @@ export function CardWithForm() {
     ? attr.header_image_url
     : "/images/Charity1.jpeg";
 
-  const donatedAmount =
-    typeof attr.donated_fund_amount === "number" ? attr.donated_fund_amount : 0;
-  const requestedAmount =
-    typeof attr.requested_fund_amount === "number"
-      ? attr.requested_fund_amount
-      : 0;
 
-  const progressPercentage =
-    requestedAmount > 0
-      ? Math.min(Math.round((donatedAmount / requestedAmount) * 100), 100)
-      : 0;
-
-  const displayId = campaign.id ? campaign.id : campaign.id;
+  
+  const displayId = campaign.id;
 
   const words = description ? description.split(" ") : [];
   const limited = words.slice(0, 75).join(" ");
@@ -101,28 +53,34 @@ export function CardWithForm() {
             </CardHeader>
 
             <CardFooter className="flex w-full justify-end h-full flex-col">
-              <div className="w-full flex flex-col items-start justify-end h-full">
-                <h1 className="text-xl font-bold">Tersedia</h1>
+              <div className="w-full flex flex-col gap-2 items-start justify-end h-full">
+                <p>
+                  Terkumpul{" "}
+                  <span className="text-primary-bg font-bold">
+                    Rp{formatPrice(attr.donated_fund_amount)}
+                  </span>
+                </p>
 
                 <ProgressBar
                   className="w-full"
                   labelAlignment="outside"
                   isLabelVisible={false}
-                  completed={progressPercentage}
-                  maxCompleted={100}
+                  completed={attr.donated_fund_amount}
+                  maxCompleted={attr.requested_fund_amount}
                 />
 
                 <div className="w-full flex flex-row justify-start">
                   <h2 className="font-thin text-xs self-center text-center">
-                    Rp {formatPrice(donatedAmount)} / Rp{" "}
-                    {formatPrice(requestedAmount)}
+                    Rp {formatPrice(attr.donated_fund_amount)} / Rp{" "}
+                    {formatPrice(attr.requested_fund_amount)}
                   </h2>
                 </div>
               </div>
 
               <Link
                 className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"
-                to={`/campaigns/${campaign.id || campaign.id || displayId}`}
+               
+                to={`/campaigns/${campaign.attributes?.slug || displayId}`}
               >
                 <h3 className="text-md font-semibold text-primary-fg text-center items-center justify-center">
                   Detail

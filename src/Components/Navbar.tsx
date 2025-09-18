@@ -21,7 +21,7 @@ interface User {
 
 interface NavbarProps {
   auth: {
-    roles: string;
+    roles: string[];
     user?: User;
   };
 }
@@ -31,24 +31,25 @@ export default function Navbar() {
   const navigate = useNavigate();
   
   const auth: NavbarProps["auth"] = {
-    roles: localStorage.getItem("roles") || "",
+    roles: localStorage.getItem("roles")
+      ? JSON.parse(localStorage.getItem("roles") || "[]")
+      : [],
     user: localStorage.getItem("user")
       ? JSON.parse(localStorage.getItem("user") || "{}")
       : undefined,
   };
 
   const currentPath = location.pathname;
-
  
-  const getDashboardUrl = (role: string[]) => {
-    if (role.includes("superadmin")) {
-      return "dashboard/superadmin";
-    } else if (role.includes("admin")) {
-      return "dashboard/admin";
-    } else if (role.includes("organizer")) {
-      return "dashboard/donee";
-    } else if (role.includes("donor")) {
-      return "dashboard/donor";
+  const getDashboardUrl = (roles: string[]) => {
+    if (roles.includes("superadmin")) {
+      return "/dashboard/super-admin";
+    } else if (roles.includes("admin")) {
+      return "/dashboard/admin";
+    } else if (roles.includes("organizer")) {
+      return "/dashboard/donee";
+    } else if (roles.includes("donor")) {
+      return "/dashboard/donor";
     } else {
       return "/";
     }
@@ -83,8 +84,6 @@ export default function Navbar() {
     }
   };
 
-  console.log("Roles:", auth.roles);
-
   return (
     <div className="w-full fixed h-[80px] top-0 left-0 z-20">
       <div className="flex w-full h-[80px] backdrop-blur-sm z-15 text-primary-bg items-center justify-center top-0 left-0 sticky">
@@ -117,14 +116,14 @@ export default function Navbar() {
               News
             </Link>
             <Link
-              to="/donation"
+              to="/campaigns"
               className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/donation")
+                isActiveUrl("/campaigns")
                   ? "border-b-4 border-blue-500 text-blue-500"
                   : "text-muted-foreground"
               }`}
             >
-              Donation
+              Campaigns
             </Link>
           </div>
 

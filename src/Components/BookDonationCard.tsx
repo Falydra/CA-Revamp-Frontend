@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/Components/ui/button";
 import {
   Card,
@@ -13,14 +13,13 @@ import CharityDetail from "./CharityDetail";
 import ProgressBar from "@/Components/ui/progress-bar";
 import { Link } from "react-router-dom";
 
-import { IoIosArrowForward } from "react-icons/io";
 import initiator_data, { type InitiatorData } from "@/config/initiator_data";
 
 
 import { Input } from "./ui/input";
 import { IoDocumentTextOutline } from "react-icons/io5";
 import nominal_donasi, { type NominalDonasi } from "@/config/nominal_donasi";
-import { fetchBookDonationData, type DonationData } from "@/data/donationData";
+import type { Campaign } from "@/types";
 
 
 interface TestUser {
@@ -41,152 +40,112 @@ function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export function BookCharityCard() {
-  const [bookDonations, setBookDonations] = useState<DonationData[]>([]);
-  const [loading, setLoading] = useState(true);
+interface CardWithFormProps {
+  campaign: Campaign | null;
+}
+
+
+export function BookCharityCard({
+  campaign
+}: CardWithFormProps) {
+  // const [bookDonations, setBookDonations] = useState<DonationData[]>([]);
+  // const [loading, setLoading] = useState(true);
   const [isModalEnableCharity, setIsModalEnableCharity] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [donationAmount, setDonationAmount] = useState("");
 
-  useEffect(() => {
-    const loadBookDonations = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchBookDonationData();
-        setBookDonations(data);
-      } catch (error) {
-        console.error("Error fetching book donations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const loadBookDonations = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const data = await fetchBookDonationData();
+  //       setBookDonations(data);
+  //     } catch (error) {
+  //       console.error("Error fetching book donations:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    loadBookDonations();
-  }, []);
+  //   loadBookDonations();
+  // }, []);
 
   const handleDetail = () => {
     setIsDetail(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-lg">Loading book donations...</div>
-      </div>
-    );
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-[400px]">
+  //       <div className="text-lg">Loading book donations...</div>
+  //     </div>
+  //   );
+  // }
+
+  if (!campaign) {
+    return null;
   }
+
+  const attr = campaign.attributes;
+  const title = attr.title ? attr.title : "Campaign";
+  const description = attr.description ? attr.description : "";
+  const headerImage = attr.header_image_url ? attr.header_image_url : "/images/Charity1.jpeg";
+
+  const words = description ? description.split(" ") : [];
+  const limited = words.slice(0, 75).join(" ");
+  const hasMore = words.length > 75;
 
   return (
     <>
-      {bookDonations.map(
-        (donation, index) =>
-          index < 1 && (
-            <Card className="w-9/12 flex flex-col h-full">
-              <div className="flex flex-row w-full h-full ">
-                <div className="w-6/12 h-full justify-between items-start flex flex-col cursor-pointer hover:text-primary-bg hover:rounded-l-xl">
-                  <CardHeader className="text-start text-xl">
-                    <CardTitle>{donation.title}</CardTitle>
-                    <CardDescription>
-                      {donation.text_descriptions[0]
-                        ?.split(" ")
-                        .slice(0, 75)
-                        .join(" ") +
-                        (donation.text_descriptions[0]?.split(" ").length > 75
-                          ? "..."
-                          : "")}
-                    </CardDescription>
-                    <div className="w-full flex flex-row items-center justify-between">
-                      <h2 className="text-sm font-semibold">
-                        <span className="text-black">Jenis Buku:</span>{" "}
-                        <span className="text-primary-accent">Kalkulus</span>
-                      </h2>
-                      <a
-                        className="text-primary-accent hover:text-primary-bg/70 font-semibold text-sm flex flex-row self-end"
-                        onClick={handleDetail}
-                      >
-                        Detail
-                        <IoIosArrowForward className="text-md self-center" />
-                      </a>
-                    </div>
-                  </CardHeader>
+      <Card className="w-9/12 flex flex-col h-96">
+        <div className="flex flex-row w-full h-full">
+          <div className="w-6/12 h-full justify-between items-start flex flex-col hover:text-primary-bg hover:rounded-l-xl">
+            <CardHeader className="text-start text-xl">
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>
+                {limited}
+                {hasMore ? "..." : null}
+              </CardDescription>
+            </CardHeader>
 
-                  <CardFooter className="flex w-full justify-end h-full flex-col ">
-                    <div className="w-full flex flex-col items-start justify-end h-full">
-                      <h1 className="text-xl font-bold">Tersedia</h1>
+            <CardFooter className="flex w-full justify-end h-full flex-col">
+              <div className="w-full flex flex-col gap-2 items-start justify-end h-full">
+                <p>Terkumpul <span className="text-primary-bg font-bold">{attr.donated_item_quantity} Barang</span></p>
 
-                      <ProgressBar
-                        className="w-full"
-                        labelAlignment="outside"
-                        isLabelVisible={false}
-                        completed={
-                          donation.type === "App\\Models\\ProductDonation"
-                            ? donation.type_attributes
-                                .fulfilled_product_amount || 0
-                            : donation.type === "App\\Models\\Fundraiser"
-                            ? donation.type_attributes.current_fund || 0
-                            : 0
-                        }
-                        maxCompleted={
-                          donation.type === "App\\Models\\ProductDonation"
-                            ? donation.type_attributes.product_amount || 100
-                            : donation.type === "App\\Models\\Fundraiser"
-                            ? donation.type_attributes.target_fund || 100
-                            : 100
-                        }
-                      />
-                      <div className="w-full flex flex-row justify-start">
-                        <h1 className="font-thin text-xs self-center text-center">
-                          Terkumpul sebanyak:{" "}
-                        </h1>
-                        <h2 className="font-thin text-xs self-center text-center px-2">
-                          {donation.type === "App\\Models\\ProductDonation"
-                            ? donation.type_attributes
-                                .fulfilled_product_amount || 0
-                            : donation.type === "App\\Models\\Fundraiser"
-                            ? formatPrice(
-                                donation.type_attributes.current_fund || 0
-                              )
-                            : "-"}{" "}
-                          /{" "}
-                          {donation.type === "App\\Models\\ProductDonation"
-                            ? donation.type_attributes.product_amount || 0
-                            : donation.type === "App\\Models\\Fundraiser"
-                            ? formatPrice(
-                                donation.type_attributes.target_fund || 0
-                              )
-                            : "-"}
-                        </h2>
-                      </div>
-                    </div>
-                    <div className="w-full flex flex-row gap-2">
-                      <Link
-                        className="flex-1 flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md"
-                        to={`/donation/${donation.id}`}
-                      >
-                        <h3 className=" text-md font-semibold text-primary-fg text-center items-center justify-center">
-                          Detail
-                        </h3>
-                      </Link>{" "}
-                      <Button
-                        className="flex-1 h-[50px] hover:bg-green-600 bg-green-500 text-white"
-                        onClick={() => setIsModalEnableCharity(true)}
-                      >
-                        Donasi Buku
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </div>
-                <div className="w-9/12 h-full items-center justify-center flex flex-col bg-cover bg-center rounded-r-xl ]">
-                  <img
-                    src={donation.header_image}
-                    alt="Charity Image"
-                    className="w-full h-full object-cover rounded-r-xl"
-                  />
-                </div>
+                <ProgressBar
+                  className="w-full"
+                  labelAlignment="outside"
+                  isLabelVisible={false}
+                  completed={attr.donated_item_quantity}
+                  maxCompleted={attr.requested_item_quantity}
+                />
               </div>
-            </Card>
-          )
-      )}
+
+              <Link
+                className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"
+                to={`/campaigns/${campaign.attributes?.slug}`}
+              >
+                <h3 className="text-md font-semibold text-primary-fg text-center items-center justify-center">
+                  Detail
+                </h3>
+              </Link>
+            </CardFooter>
+          </div>
+
+          <div className="w-6/12 h-full items-center justify-center flex flex-col bg-cover bg-center rounded-r-xl">
+            <img
+              src={headerImage}
+              alt={title}
+              className="w-full h-full object-cover rounded-r-xl"
+              onError={(e) => {
+                e.currentTarget.src = "https://via.placeholder.com/400x300?text=Campaign+Image";
+              }}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Modal */}
       {isModalEnableCharity && (
         <div className="fixed z-50 inset-0 bg-black bg-opacity-50 flex text-primary-bg items-center justify-center">
           <div className="bg-white w-1/3 h-5/6 rounded-xl flex flex-col">
@@ -288,6 +247,8 @@ export function BookCharityCard() {
           </div>
         </div>
       )}
+
+      {/* Detail */}
       {isDetail && (
         <CharityDetail isDetail={isDetail} setIsDetail={setIsDetail} />
       )}

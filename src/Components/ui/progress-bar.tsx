@@ -4,9 +4,10 @@ interface ProgressBarProps {
   completed: number;
   maxCompleted: number;
   className?: string;
-  height?: string;
+  height?: string | number;
   labelAlignment?: "top" | "bottom" | "outside";
   isLabelVisible?: boolean;
+  color?: string;
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({
@@ -16,6 +17,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   height = "8px",
   labelAlignment = "top",
   isLabelVisible = true,
+  color
 }) => {
   const percentage = Math.min((completed / maxCompleted) * 100, 100);
 
@@ -32,7 +34,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         style={{ height }}
       >
         <div
-          className="bg-blue-500 h-full rounded-full transition-all duration-300 ease-in-out"
+          className={`${color ? `bg-${color}-500` : "bg-blue-500"} h-full rounded-full transition-all duration-300 ease-in-out`}
           style={{ width: `${percentage}%` }}
         />
       </div>

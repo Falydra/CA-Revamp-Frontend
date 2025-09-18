@@ -25,7 +25,10 @@ export default function CharityNews({
     const fetchCampaigns = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getCampaigns();
+
+       
+
+        const response = await apiService.getCampaigns({});
 
         let campaignData: Campaign[] = [];
         if (response.success && response.data) {
@@ -127,6 +130,10 @@ export default function CharityNews({
                   <div className="w-full h-2/5 bg-gray-300 flex-col items-start rounded-b-lg flex justify-start">
                     <div className="flex flex-col items-start justify-start py-2">
                       <h3 className="text-primary-bg w-6/12 px-4 text-xs font-semibold">
+                        {campaign.relationships.organizer.attributes.name ||
+                          campaign.relationships.organizer.attributes.name ||
+                          "Anonymous"}
+
                         {campaign.relationships.organizer.attributes.name ||
                           campaign.relationships.organizer.attributes.name ||
                           "Anonymous"}

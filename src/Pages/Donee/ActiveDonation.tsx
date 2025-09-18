@@ -23,7 +23,7 @@ export default function ActiveDonation() {
     const fetchCampaigns = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getCampaigns();
+        const response = await apiService.getCampaigns({});
 
         const campaignList = Array.isArray(response?.data?.data)
           ? response.data.data

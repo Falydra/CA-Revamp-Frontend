@@ -16,7 +16,7 @@ import {
   Clock,
   MoreHorizontal,
   Trash2,
-  Edit,
+  
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -50,7 +50,7 @@ export default function ManageDonations() {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await apiService.getCampaigns();
+      const response = await apiService.getCampaigns({});
 
       const campaignList = Array.isArray(response?.data?.data)
         ? response.data.data
@@ -290,7 +290,6 @@ export default function ManageDonations() {
                           campaign.relationships?.organizer.attributes.name ||
                           campaign.relationships?.organizer.attributes.name ||
                           "Anonymous";
-
                         const progressPercentage =
                           campaignData.requested_fund_amount >= 0
                             ? campaignData.requested_fund_amount > 0

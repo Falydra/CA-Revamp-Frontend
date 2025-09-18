@@ -32,7 +32,10 @@ export default function DoneeDashboard() {
           setUser(JSON.parse(storedUser));
         }
 
-        const campaignResponse = await apiService.getCampaigns();
+       
+
+        const campaignResponse = await apiService.getCampaigns({});
+
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
           : Array.isArray(campaignResponse?.data)

@@ -4,7 +4,7 @@ export default function Hero() {
  
 
   return (
-    <div className="relative flex w-full h-screen overflow-y-auto items-center justify-center bg-cover bg-center ">
+    <div className="relative flex w-full h-fit overflow-y-auto items-center justify-center bg-cover bg-center ">
      
       <div className="relative flex flex-col items-start w-8/12 justify-center">
         <h1 className="text-5xl font-bold text-blue-500">Caritas Aeterna</h1>
