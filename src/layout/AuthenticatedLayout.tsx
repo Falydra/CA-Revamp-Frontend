@@ -1,28 +1,28 @@
-import  { type PropsWithChildren, type ReactNode, useEffect, useState } from "react";
+import { type PropsWithChildren, type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/Components/app-sidebar";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
 } from "@/Components/ui/breadcrumb";
 import { Separator } from "@/Components/ui/separator";
 import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
 } from "@/Components/ui/sidebar";
 import { SearchForm } from "@/Components/search-form";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { Button } from "@/Components/ui/button";
 import { IoIosLogOut } from "react-icons/io";
@@ -40,7 +40,7 @@ interface User {
 
 interface AuthProps {
     user: User | null;
-    roles: string;
+    roles: string[];
 }
 
 export default function Authenticated({
@@ -50,17 +50,19 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode, rightSidebarChildren?: ReactNode }>) {
     const location = useLocation();
     const navigate = useNavigate();
-    const [auth, setAuth] = useState<AuthProps>({ user: null, roles: "" });
+    const [auth, setAuth] = useState<AuthProps>({ user: null, roles: [] });
     const [loading, setLoading] = useState(true);
 
-    
+
     useEffect(() => {
         const getCurrentUser = async () => {
             try {
                 const storedUser = localStorage.getItem('user');
-                const storedRoles = localStorage.getItem('roles');
+                const storedRoles = localStorage.getItem("roles")
+                    ? JSON.parse(localStorage.getItem("roles") || "[]")
+                    : [];
                 const storedToken = localStorage.getItem('auth_token');
-                
+
                 if (storedUser && storedRoles && storedToken) {
                     const parsedUser = JSON.parse(storedUser);
                     setAuth({
@@ -68,13 +70,13 @@ export default function Authenticated({
                         roles: storedRoles
                     });
                 } else {
-                   
+
                     navigate('/auth/login');
                     return;
                 }
             } catch (error) {
                 console.error('Error getting current user:', error);
-                
+
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('roles');
@@ -87,14 +89,14 @@ export default function Authenticated({
         getCurrentUser();
     }, [navigate]);
 
-    
+
     const handleLogout = async () => {
         try {
             await apiService.logout();
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-          
+
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
             localStorage.removeItem('roles');
@@ -102,7 +104,7 @@ export default function Authenticated({
         }
     };
 
- 
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -116,45 +118,43 @@ export default function Authenticated({
         return null;
     }
 
-    
+
     const currentPath = location.pathname;
 
-   
-    const getMenuItems = (role: string) => {
-        switch (role) {
-            case "donee":
-                return DoneePage.mainPage.items;
-            case "donor":
-                return DonorPage.mainPage.items;
-            case "admin":
-                return AdminPage.mainPage.items;
-            case "superadmin":
-                return SuperAdminPage.mainPage.items;
-            default:
-                return [];
+
+    const getMenuItems = (roles: string[]) => {
+        if (roles.includes("superadmin")) {
+            return SuperAdminPage.mainPage.items;
+        } else if (roles.includes("admin")) {
+            return AdminPage.mainPage.items;
+        } else if (roles.includes("organizer")) {
+            return DoneePage.mainPage.items;
+        } else if (roles.includes("donor")) {
+            return DonorPage.mainPage.items;
         }
+
+        return [];
     };
 
     const menuItems = getMenuItems(auth.roles);
 
-    
+
     const activeMenuItem = menuItems
         .filter(item => currentPath.startsWith(item.url))
         .sort((a, b) => b.url.length - a.url.length)[0];
 
-    
-    const getDashboardUrl = (role: string) => {
-        switch (role) {
-            case "superadmin":
-                return "/dashboard/super-admin";
-            case "admin":
-                return "/dashboard/admin";
-            case "donor":
-                return "/dashboard/donor";
-            case "donee":
-                return "/dashboard/donee";
-            default:
-                return "/dashboard";
+
+    const getDashboardUrl = (roles: string[]) => {
+        if (roles.includes("superadmin")) {
+            return "/dashboard/super-admin";
+        } else if (roles.includes("admin")) {
+            return "/dashboard/admin";
+        } else if (roles.includes("organizer")) {
+            return "/dashboard/donee";
+        } else if (roles.includes("donor")) {
+            return "/dashboard/donor";
+        } else {
+            return "/";
         }
     };
 
@@ -162,7 +162,7 @@ export default function Authenticated({
 
     return (
         <SidebarProvider>
-            <AppSidebar onMenuItemClick={() => {}} />
+            <AppSidebar onMenuItemClick={() => { }} />
             <SidebarInset>
                 <div className="flex flex-col items-start justify-start w-full h-full bg-primary-fg">
                     <header className="flex h-16 w-full items-center justify-between gap-2 border-b px-4">
@@ -205,14 +205,14 @@ export default function Authenticated({
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuGroup>
-                                        <Link 
-                                            to="/" 
+                                        <Link
+                                            to="/"
                                             className="flex justify-between w-full h-8 items-center bg-transparent hover:bg-muted-foreground/20 rounded-md text-primary-bg px-2 font-semibold text-sm"
                                         >
                                             Home
                                             <FaHome className="w-4 h-4 aspect-square self-center" />
                                         </Link>
-                                        <button 
+                                        <button
                                             onClick={handleLogout}
                                             className="flex justify-between w-full h-8 items-center bg-transparent hover:bg-muted-foreground/20 rounded-md text-primary-bg px-2 font-semibold text-sm"
                                         >

@@ -18,7 +18,7 @@ export default function CharityDetail({
   setIsDetail,
 }: {
   isDetail: boolean;
-  setIsDetail?: boolean;
+  setIsDetail: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [isDetailDonatur, setIsDetailDonatur] = useState(false);
 

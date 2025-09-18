@@ -34,7 +34,7 @@ export default function DoneeDashboard() {
         }
 
         
-        const campaignResponse = await apiService.getCampaigns();
+        const campaignResponse = await apiService.getCampaigns({});
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
           : Array.isArray(campaignResponse?.data)

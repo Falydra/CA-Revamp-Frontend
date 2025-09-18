@@ -52,8 +52,9 @@ export type Role = {
 export type Organizer = {
   type: User;
   id: string;
-  attriutes: {
+  attributes: {
     name: string;
+    profile_image_url: string;
   }
 }
 
@@ -90,11 +91,11 @@ export type AdminStats = {
   total_funds_raised: number;
 };
 
-
 export type Campaign = {
   type: string;
   campaign_id: string;
   attributes: {
+    campaign_type: string,
     title: string;
     slug: string;
     description: string;
@@ -107,14 +108,12 @@ export type Campaign = {
     donated_item_quantity: number;
     created_at: string;
     reviewed_at: string;
-
   };
   relationships: {
     organizer: Organizer;
   }
   links: string;
   created_at?: string;
-
 };
 
 
@@ -133,6 +132,19 @@ export type Fund = {
   campaign?: Campaign;
   donor?: User;
 };
+
+export type FundSummary = {
+  type: string;
+  id: string;
+  attributes: {
+    amount: number;
+    updated_at: string;
+  };
+  donor: {
+    name: string;
+    profile_image_url: string;
+  }
+}
 
 
 export type DonatedBook = {
@@ -153,6 +165,18 @@ export type DonatedBook = {
   donor?: User;
 };
 
+export type DonatedItemSummary = {
+  type: string;
+  id: string;
+  attributes: {
+    quantity: number;
+    updated_at: string;
+  };
+  donor: {
+    name: string;
+    profile_image_url: string;
+  }
+}
 
 export type DonatedItem = {
   donated_item_id: string;
@@ -174,20 +198,37 @@ export type DonatedItem = {
 
 
 export type RequestedSupply = {
-  requested_supply_id: string; 
-  campaign_id: string; 
-  name: string;
-  description?: string | null;
-  quantity_needed: number;
-  quantity_received: number;
-  unit: string;
-  created_at?: string;
-  updated_at?: string;
-  
- 
-  campaign?: Campaign;
-  donated_items?: DonatedItem[];
+  type: string;
+  id: string;
+  attributes: {
+    name: string;
+    description: string;
+    price: number;
+    requested_quantity: number;
+    donated_quantity: number;
+  }
 };
+
+export type RequestedBook = {
+  type: string;
+  id: string;
+  attributes: {
+    isbn: string;
+    title: string;
+    synopsis: string;
+    slug: string;
+    authors: {
+      author_1: string;
+      author_2?: string | null;
+      author_3: string | null;
+    },
+    published_year: number;
+    cover_image_url: string;
+    price: number;
+    requested_quantity: number;
+    donated_quantity: number;
+  }
+}
 
 
 export type ApiResponse<T> = {

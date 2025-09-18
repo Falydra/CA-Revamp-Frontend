@@ -14,6 +14,11 @@ interface LoginFormProps {
   setShowSignUpForm: (val: boolean) => void;
 }
 
+interface Role {
+  type: string;
+  name: string;
+}
+
 export default function LoginForm({
   setShowLoginForm,
   setShowSignUpForm,
@@ -27,6 +32,7 @@ export default function LoginForm({
     password: "",
     remember: false,
   });
+  const [roles, setRoles] = useState<string[]>([]);
 
   const navigate = useNavigate();
 
@@ -44,19 +50,16 @@ export default function LoginForm({
 
       console.log("Login successful:", loginResponse);
 
-      
       if (loginResponse.success && loginResponse.data) {
         const { user, token } = loginResponse.data;
 
+        const roleNames = loginResponse.data.user.roles.map((role: Role) => role.name);
        
         localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("roles", user.role || "donor");
+        localStorage.setItem("roles", JSON.stringify(roleNames));
         localStorage.setItem("auth_token", token);
-
-        console.log("User data stored in localStorage");
       }
 
-      
       navigate("/");
     } catch (error) {
       const err = error as AxiosError;

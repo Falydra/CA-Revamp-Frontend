@@ -74,40 +74,41 @@ function getIconForItem(item: ConfigMenuItem): LucideIcon {
   return Home;
 }
 
-function getGroupsForRole(role: string): SidebarGroupConfig[] {
-  switch (role) {
-    case "donor": {
-      const mainItems = DonorPage.mainPage.items ?? [];
-      const profileItems = (DonorPage.mainPage as any).profileItems ?? [];
-      const groups: SidebarGroupConfig[] = [];
-      if (mainItems.length) groups.push({ label: "Menu", items: mainItems });
-      if (profileItems.length) groups.push({ label: "Profile", items: profileItems });
-      return groups;
-    }
-    case "donee":
-      return [{ label: "Menu", items: DoneePage.mainPage.items }];
-    case "admin":
-      return [{ label: "Menu", items: AdminPage.mainPage.items }];
-    case "superadmin":
-      return [{ label: "Menu", items: SuperAdminPage.mainPage.items }];
-    default:
-      return [
-        {
-          label: "Menu",
-          items: [{ title: "Dashboard", url: "/dashboard", isActive: false }],
-        },
-      ];
-  }
+function getGroupsForRole(roles: string[]): SidebarGroupConfig[] {
+  console.log("Role sidebar: ", roles, typeof (roles));
+
+  if (roles.includes("superadmin")) {
+    return [{ label: "Menu", items: SuperAdminPage.mainPage.items }];
+  } else if (roles.includes("admin")) {
+    return [{ label: "Menu", items: AdminPage.mainPage.items }];
+  } else if (roles.includes("organizer")) {
+    return [{ label: "Menu", items: DoneePage.mainPage.items }];
+  } else if (roles.includes("donor")) {
+    const mainItems = DonorPage.mainPage.items ?? [];
+    const profileItems = (DonorPage.mainPage as any).profileItems ?? [];
+    const groups: SidebarGroupConfig[] = [];
+    if (mainItems.length) groups.push({ label: "Menu", items: mainItems });
+    if (profileItems.length) groups.push({ label: "Profile", items: profileItems });
+    return groups;
+  } 
+
+  // default
+  return [
+    {
+      label: "Menu",
+      items: [{ title: "Dashboard", url: "/dashboard", isActive: false }],
+    },
+  ];
 }
 
 
 function isMenuItemActive(currentPath: string, menuUrl: string): boolean {
-  
+
   if (currentPath === menuUrl) {
     return true;
   }
 
-  
+
   const specialCases = [
     {
       menuUrl: "/dashboard/donor/profile",
@@ -130,7 +131,7 @@ function isMenuItemActive(currentPath: string, menuUrl: string): boolean {
     }
   }
 
- 
+
   return false;
 }
 
@@ -141,10 +142,12 @@ interface AppSidebarProps {
 export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState<string>("");
+  const [userRole, setUserRole] = useState<string[]>([]);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("roles");
+    const storedRole = localStorage.getItem("roles")
+      ? JSON.parse(localStorage.getItem("roles") || "[]")
+      : [];
     if (storedRole) setUserRole(storedRole);
   }, []);
 
@@ -155,7 +158,7 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
     onMenuItemClick();
   };
 
-  
+
   const allMenuItems = useMemo(() => {
     const items: Array<ConfigMenuItem & { groupLabel: string }> = [];
     groups.forEach(group => {
@@ -166,16 +169,16 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
     return items;
   }, [groups]);
 
-  
+
   const activeMenuUrl = useMemo(() => {
     const currentPath = location.pathname;
-    
-    
+
+
     const sortedItems = [...allMenuItems].sort((a, b) => b.url.length - a.url.length);
-    
-    
+
+
     const activeItem = sortedItems.find(item => isMenuItemActive(currentPath, item.url));
-    
+
     return activeItem?.url || null;
   }, [location.pathname, allMenuItems]);
 
@@ -201,11 +204,10 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
                       <SidebarMenuItem key={`${group.label}-${item.url || item.title}`}>
                         <SidebarMenuButton
                           onClick={() => handleItemClick(item.url)}
-                          className={`cursor-pointer ${
-                            isActive
-                              ? "bg-primary-accent text-white hover:bg-primary-accent/80"
-                              : "hover:bg-primary-accent/10"
-                          }`}
+                          className={`cursor-pointer ${isActive
+                            ? "bg-primary-accent text-white hover:bg-primary-accent/80"
+                            : "hover:bg-primary-accent/10"
+                            }`}
                         >
                           <Icon />
                           <span>{item.title}</span>

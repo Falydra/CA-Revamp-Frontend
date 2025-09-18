@@ -8,7 +8,8 @@ const Dashboard = lazy(() => import("@/Pages/Donor/Dashboard"));
 const DonationHistory = lazy(() => import("@/Pages/Donor/DonationHistory"));
 const DonorProfile = lazy(() => import("@/Pages/Donor/Profile"));
 
-import CampaignDetail from '@/Pages/Donation/DonationDetail';
+import CampaignDetail from "./Pages/Campaign/CampaignDetail";
+import DonationDetail from "./Pages/Donation/DonationDetail";
 import DoneeRegister from "@/Pages/Donor/DoneeRegister";
 import DoneeDashboard from "@/Pages/Donee/Dashboard";
 import ActiveDonation from "@/Pages/Donee/ActiveDonation";
@@ -17,6 +18,7 @@ import DoneeProfile from "@/Pages/Donee/Profile";
 
 import "./index.css";
 import { ErrorBoundary } from "@/Components/ErrorBoundary";
+import AdminDashboard from "./Pages/Admin/Dashboard";
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -28,7 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<Welcome />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/donation" element={<Campaign />} />
-            <Route path="/donation/:id" element={<CampaignDetail />} />
+            <Route path="/donation/:id" element={<DonationDetail />} />
             <Route path="/campaigns" element={<Campaign />} />
             <Route path="/campaigns/:id" element={<CampaignDetail />} />
             <Route path="/dashboard/donor" element={<Dashboard />} />
@@ -38,6 +40,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
              <Route path="/dashboard/donee" element={<DoneeDashboard />} />
             <Route path="/dashboard/donee/donations" element={<ActiveDonation />} />
             <Route path="/dashboard/donee/profile" element={<DoneeProfile />} />
+            <Route path="/dashboard/admin" element={<AdminDashboard />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

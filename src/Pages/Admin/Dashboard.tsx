@@ -55,7 +55,7 @@ export default function AdminDashboard() {
         }
 
       
-        const campaignResponse = await apiService.getCampaigns();
+        const campaignResponse = await apiService.getCampaigns({});
         const campaignList = Array.isArray(campaignResponse?.data?.data)
           ? campaignResponse.data.data
           : Array.isArray(campaignResponse?.data)
@@ -301,8 +301,7 @@ export default function AdminDashboard() {
                 {recentCampaigns.map((campaign) => {
                   const campaignData = campaign.attributes || campaign;
                   const organizerName =
-                    campaign.relationships?.organizer?.attriutes?.name ||
-                    campaign.relationships?.organizer?.name ||
+                    campaign.relationships?.organizer?.attributes?.name ||
                     "Anonymous";
 
                   return (

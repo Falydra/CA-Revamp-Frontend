@@ -38,7 +38,7 @@ export default function ManageDonations() {
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getCampaigns();
+      const response = await apiService.getCampaigns({});
 
       const campaignList = Array.isArray(response?.data?.data)
         ? response.data.data
@@ -70,8 +70,8 @@ export default function ManageDonations() {
       filtered = filtered.filter((campaign) => {
         const campaignData = campaign.attributes || campaign;
         const organizerName =
-          campaign.relationships?.organizer?.attriutes?.name ||
-          campaign.relationships?.organizer?.attriutes?.name ||
+          campaign.relationships?.organizer?.attributes?.name ||
+          campaign.relationships?.organizer?.attributes?.name ||
           "";
 
         return (
@@ -239,8 +239,8 @@ export default function ManageDonations() {
             {filteredCampaigns.map((campaign) => {
               const campaignData = campaign.attributes || campaign;
               const organizerName =
-                campaign.relationships?.organizer?.attriutes?.name ||
-                campaign.relationships?.organizer?.attriutes?.name ||
+                campaign.relationships?.organizer?.attributes?.name ||
+                campaign.relationships?.organizer?.attributes?.name ||
                 "Anonymous";
 
               return (

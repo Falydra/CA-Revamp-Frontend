@@ -20,7 +20,7 @@ function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export default function CampaignDetail() {
+export default function DonationDetail() {
   const { id } = useParams<{ id: string }>();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -59,14 +59,15 @@ export default function CampaignDetail() {
       try {
         setLoading(true);
 
-        
         const campaignResponse = await apiService.getCampaign(id);
-        if (campaignResponse.data?.success && campaignResponse.data.data) {
-          const campaignData = campaignResponse.data.data;
+        if (campaignResponse.status === "success") {
+          const campaignData = campaignResponse.data;
+          const type = campaignData.attributes.requested_item_quantity 
+            ? "product_donation"
+            : "fundraiser";
           setCampaign(campaignData);
 
-          
-          if (campaignData.type === "fundraiser") {
+          if (type === "fundraiser") {
             try {
               const fundsResponse = await apiService.getFunds(id);
               if (fundsResponse.data?.success) {
@@ -306,8 +307,9 @@ export default function CampaignDetail() {
     );
   }
 
+  const type = campaign.attributes.requested_item_quantity ? "product_donation" : "fundraiser";
   const progressPercentage =
-    campaign.type === "fundraiser"
+    type === "fundraiser"
       ? campaign.attributes.requested_fund_amount > 0
         ? Math.min(
             (campaign.attributes.donated_fund_amount / campaign.attributes.requested_fund_amount) * 100,
@@ -364,8 +366,7 @@ export default function CampaignDetail() {
                 alt=""
               />
               <h3 className="text-primary-fg w-full my-auto font-semibold">
-                {campaign.relationships?.organizer?.attriutes?.name ||
-                  campaign.relationships?.organizer?.name ||
+                {campaign.relationships?.organizer?.attributes?.name ||
                   "Anonymous"}
               </h3>
             </div>
@@ -803,15 +804,13 @@ export default function CampaignDetail() {
                 <h1 className="text-xl font-bold self-start">Detail Donasi</h1>
                 <div className="w-full h-[75px] flex rounded-xl items-center flex-row gap-4 justify-start">
                   <div className="w-12 h-12 flex items-center aspect-square justify-center rounded-full bg-primary-accent cursor-pointer text-white">
-                    {campaign.relationships?.organizer?.attriutes?.name?.charAt(0) ||
-                      campaign.relationships?.organizer?.name?.charAt(0) ||
+                    {campaign.relationships?.organizer?.attributes?.name?.charAt(0) ||
                       "O"}
                   </div>
                   <div className="w-full flex-col items-start justify-center flex">
                     <h1 className="text-lg font-bold">{campaign.attributes.title}</h1>
                     <h1 className="text-sm font-semibold">
-                      {campaign.relationships?.organizer?.attriutes?.name ||
-                        campaign.relationships?.organizer?.name ||
+                      {campaign.relationships?.organizer?.attributes?.name ||
                         "Anonymous"}
                     </h1>
                   </div>
