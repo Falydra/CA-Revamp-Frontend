@@ -1,450 +1,516 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DynamicTextDescription from "./DynamicTextDescription";
-import AddTextDescriptionButton from "./AddTextDescriptionButton";
-import AddImageDescriptionButton from "./AddImageDescriptionButton";
-import DynamicImageDescription from "./DynamicImageDescription";
-import { Book, BookWithAmount, Facility } from "@/types";
-import {
-    Select,
-    SelectContent,
-    SelectTrigger,
-    SelectValue,
-    SelectItem,
-    SelectGroup,
-    SelectLabel,
-} from "@/Components/ui/select";
-import SearchBook from "../Book/Search";
-import BookCollection from "../Book/Collection";
-import FacilityCollection from "../Facility/Collection";
-import { apiService } from "@/services/api";
 import { toast } from "sonner";
-import AuthenticatedLayout from "@/Layout/AuthenticatedLayout";
+import { Input } from "@/Components/ui/input";
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Label } from "@/Components/ui/label";
+import { Textarea } from "@/Components/ui/textarea";
+import DonorLayout from "@/Layout/AuthenticatedLayout";
+import type { Role, User } from "@/types";
+import { apiService } from "@/services/api";
+import AddTextDescriptionButton from "@/Pages/Donation/AddTextDescriptionButton";
+import AddImageDescriptionButton from "@/Pages/Donation/AddImageDescriptionButton";
+import DynamicTextDescription from "@/Pages/Donation/DynamicTextDescription";
+import DynamicImageDescription from "@/Pages/Donation/DynamicImageDescription";
 
-export default function CreateDonation() {
-    const navigate = useNavigate();
-    
-    // donation data
-    const [data, setData] = useState({
-        type: "",
-        title: "",
-        description: "",
-    });
+interface TextDescription {
+  id: string;
+  content: string;
+}
 
-    // header image
-    const [headerImage, setHeaderImage] = useState<File | null>(null);
-    const [previewImage, setPreviewImage] = useState("");
-    
-    const handleHeaderImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setHeaderImage(file);
-            setPreviewImage(URL.createObjectURL(file));
+interface ImageDescription {
+  id: string;
+  file: File;
+  url: string;
+}
+
+export default function CreateCampaign() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    campaign_type: "fund",
+    title: "",
+    description: "",
+    requested_fund_amount: "",
+    requested_item_quantity: "",
+    header_image: null as File | null,
+  });
+  const [textDescriptions, setTextDescriptions] = useState<TextDescription[]>(
+    []
+  );
+  const [imageDescriptions, setImageDescriptions] = useState<
+    ImageDescription[]
+  >([]);
+  const [errors, setErrors] = useState<any>({});
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/auth/login");
+      }
+    } else {
+      toast.error("Please login to create a campaign");
+      navigate("/auth/login");
+    }
+  }, [navigate]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value, files } = target;
+
+    if (files) {
+      setForm((prev) => ({
+        ...prev,
+        [name]: files[0],
+      }));
+      return;
+    }
+
+    if (
+      name === "requested_fund_amount" ||
+      name === "requested_item_quantity"
+    ) {
+      const numericValue = value.replace(/[^0-9.]/g, "");
+
+      const parts = numericValue.split(".");
+      const validValue =
+        parts.length > 2
+          ? parts[0] + "." + parts.slice(1).join("")
+          : numericValue;
+
+      if (name === "requested_fund_amount") {
+        const numValue = parseFloat(validValue);
+        if (validValue !== "" && (numValue <= 0 || numValue > 999999999999)) {
+          return;
         }
-    };
+      }
 
-    // fundraiser attributes
-    const [fundraiserAttr, setFundraiserAttr] = useState({
-        target_fund: "",
-    });
-
-    // product donation attributes
-    const [productDonationAttr, setProductDonationAttr] = useState({
-        product_amount: "",
-    });
-
-    const [descriptions, setDescriptions] = useState<{ value: string | File }[]>([
-        { value: "" }
-    ]);
-
-    // books with amount
-    const [selectedBooks, setSelectedBooks] = useState<BookWithAmount[]>([]);
-
-    // facilities data
-    const [addedFacilities, setAddedFacilities] = useState<Facility[]>([]);
-
-    // loading state
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // update books data
-    const handleAddBook = (book: Book, amount = 1) => {
-        setSelectedBooks((prev) => {
-            const existing = prev.find((item) => item.book.isbn === book.isbn);
-
-            if (existing) {
-                const updatedAmount = existing.amount + amount;
-
-                if (updatedAmount === 0) {
-                    return prev.filter((item) => item.book.isbn !== book.isbn);
-                }
-
-                return prev.map((item) =>
-                    item.book.isbn === book.isbn
-                        ? { ...item, amount: item.amount + amount }
-                        : item
-                );
-            }
-            return [...prev, { book, amount }];
-        });
-    };
-
-    const handleDeleteBook = (book: Book) => {
-        setSelectedBooks((prev) => {
-            return prev.filter((item) => item.book.isbn !== book.isbn);
-        });
-    };
-
-    // update facility data
-    const handleAddFacility = (updatedFacility: Facility) => {
-        setAddedFacilities((prev) => {
-            const exists = prev.some(
-                (facility) => facility.id === updatedFacility.id
-            );
-
-            if (exists) {
-                if (updatedFacility.amount === 0) {
-                    return prev.filter(
-                        (item) => item.id !== updatedFacility.id
-                    );
-                }
-
-                return prev.map((facility) =>
-                    facility.id === updatedFacility.id
-                        ? updatedFacility
-                        : facility
-                );
-            } else {
-                return [...prev, updatedFacility];
-            }
-        });
-    };
-
-    const handleDeleteFacility = (facility: Facility) => {
-        setAddedFacilities((prev) => {
-            return prev.filter((item) => item.id !== facility.id);
-        });
-    };
-
-    // update text description field
-    const handleTextDescriptionChange = (
-        index: number,
-        e: React.ChangeEvent<HTMLTextAreaElement>
-    ) => {
-        const values = [...descriptions];
-        values[index].value = e.target.value;
-        setDescriptions(values);
-    };
-
-    // update image description field
-    const handleImageDescriptionChange = (
-        index: number,
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const values = [...descriptions];
-        if (e.target.files?.[0]) {
-            values[index].value = e.target.files[0];
-            setDescriptions(values);
+      if (name === "requested_item_quantity") {
+        const intValue = parseInt(validValue);
+        if (validValue !== "" && (intValue <= 0 || intValue > 999999)) {
+          return;
         }
-    };
 
-    // add new text description
-    const handleAddTextDescription = () => {
-        setDescriptions([...descriptions, { value: "" }]);
-    };
+        setForm((prev) => ({
+          ...prev,
+          [name]: validValue.split(".")[0],
+        }));
+        return;
+      }
 
-    // add new image description
-    const handleAddImageDescription = (file: File) => {
-        setDescriptions((prev) => [...prev, { value: file }]);
-    };
+      setForm((prev) => ({
+        ...prev,
+        [name]: validValue,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    if (errors[name]) {
+      setErrors((prev: any) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+  };
 
-    // remove input fields
-    const handleRemoveFields = (index: number) => {
-        const newDescriptions = [...descriptions];
-        newDescriptions.splice(index, 1);
-        setDescriptions(newDescriptions);
-    };
+  const validateForm = () => {
+    const newErrors: any = {};
 
-    // handle submit
-    const handleSubmit = async () => {
-        try {
-            setIsSubmitting(true);
+    if (!form.title.trim()) {
+      newErrors.title = "Campaign title is required";
+    }
 
-            // Validation
-            if (!data.type || !data.title) {
-                toast.error("Please fill in all required fields");
-                return;
-            }
+    if (!form.description.trim()) {
+      newErrors.description = "Campaign description is required";
+    }
 
-            if (data.type === "fundraiser" && !fundraiserAttr.target_fund) {
-                toast.error("Please set target fund amount");
-                return;
-            }
-
-            if (data.type === "product_donation" && selectedBooks.length === 0 && addedFacilities.length === 0) {
-                toast.error("Please add at least one book or facility");
-                return;
-            }
-
-            const payload = new FormData();
-
-            payload.append("type", data.type);
-            payload.append("title", data.title);
-            payload.append("description", data.description);
-
-            if (headerImage) {
-                payload.append("header_image", headerImage);
-            }
-
-            // append descriptions
-            descriptions.forEach((description, index) => {
-                if (typeof description.value === "string" && description.value.trim()) {
-                    payload.append(`text_descriptions[${index}]`, description.value);
-                } else if (description.value instanceof File) {
-                    payload.append(`image_descriptions[${index}]`, description.value);
-                }
-            });
-
-            let product_fund = 0;
-
-            // append books for product donation
-            if (data.type === "product_donation") {
-                selectedBooks.forEach((bookItem, index) => {
-                    payload.append(`requested_books[${index}][isbn]`, bookItem.book.isbn);
-                    payload.append(`requested_books[${index}][quantity]`, String(bookItem.amount));
-                    product_fund += bookItem.book.price * bookItem.amount;
-                });
-
-                // append facilities
-                addedFacilities.forEach((facility, index) => {
-                    payload.append(`requested_supplies[${index}][name]`, facility.name);
-                    payload.append(`requested_supplies[${index}][description]`, facility.description);
-                    payload.append(`requested_supplies[${index}][quantity_needed]`, String(facility.amount));
-                    payload.append(`requested_supplies[${index}][unit]`, "pcs");
-                    product_fund += Number(facility.price) * facility.amount;
-                });
-
-                payload.append("requested_fund_amount", "0");
-                payload.append("requested_item_quantity", String(selectedBooks.length + addedFacilities.length));
-            } else {
-                // fundraiser
-                payload.append("requested_fund_amount", fundraiserAttr.target_fund);
-                payload.append("requested_item_quantity", "0");
-            }
-
-            const response = await apiService.createCampaign(payload);
-
-            if (response.data?.success) {
-                toast.success("Campaign created successfully!");
-                navigate("/dashboard/donee");
-            } else {
-                toast.error("Failed to create campaign");
-            }
-        } catch (error: any) {
-            console.error("Create campaign error:", error);
-            if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error("Failed to create campaign");
-            }
-        } finally {
-            setIsSubmitting(false);
+    if (form.campaign_type === "fund") {
+      if (
+        !form.requested_fund_amount ||
+        form.requested_fund_amount.trim() === ""
+      ) {
+        newErrors.requested_fund_amount = "Target fund amount is required";
+      } else {
+        const fundAmount = parseFloat(form.requested_fund_amount);
+        if (isNaN(fundAmount) || fundAmount <= 0) {
+          newErrors.requested_fund_amount =
+            "Target fund amount must be greater than 0";
+        } else if (fundAmount < 10000) {
+          newErrors.requested_fund_amount =
+            "Minimum target amount is IDR 10,000";
+        } else if (fundAmount > 999999999999) {
+          newErrors.requested_fund_amount = "Target amount is too large";
         }
+      }
+    }
+
+    if (form.campaign_type === "item") {
+      if (
+        !form.requested_item_quantity ||
+        form.requested_item_quantity.trim() === ""
+      ) {
+        newErrors.requested_item_quantity = "Target item quantity is required";
+      } else {
+        const itemQuantity = parseInt(form.requested_item_quantity);
+        if (isNaN(itemQuantity) || itemQuantity <= 0) {
+          newErrors.requested_item_quantity =
+            "Target item quantity must be greater than 0";
+        } else if (itemQuantity > 999999) {
+          newErrors.requested_item_quantity = "Target quantity is too large";
+        }
+      }
+    }
+
+    if (!form.header_image) {
+      newErrors.header_image = "Header image is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const addTextDescription = () => {
+    const newDescription: TextDescription = {
+      id: Date.now().toString(),
+      content: "",
     };
+    setTextDescriptions((prev) => [...prev, newDescription]);
+  };
 
-    return (
-        <AuthenticatedLayout>
-            <div className="w-full min-h-screen flex flex-col p-4 gap-4">
-                <h2 className="text-gray-900 text-2xl font-bold self-start">
-                    Buat Kampanye Baru
-                </h2>
-
-                <div className="flex flex-col w-full gap-4 bg-white p-6 rounded-lg shadow">
-                    <label htmlFor="type" className="flex flex-col text-gray-700">
-                        Jenis Kampanye
-                        <Select
-                            name="type"
-                            onValueChange={(value) => {
-                                setData({ ...data, type: value });
-                            }}
-                        >
-                            <SelectTrigger className="w-full border border-gray-300 focus:border-blue-500">
-                                <SelectValue placeholder="--- Pilih Jenis Kampanye ---" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>--- Pilih Jenis Kampanye ---</SelectLabel>
-                                    <SelectItem value="fundraiser" className="cursor-pointer">
-                                        Penggalangan Dana
-                                    </SelectItem>
-                                    <SelectItem value="product_donation" className="cursor-pointer">
-                                        Donasi Produk
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <span className="text-gray-500 text-sm py-2">
-                            Pilih jenis kampanye yang ingin dibuat
-                        </span>
-                    </label>
-
-                    {data.type && data.type === "fundraiser" && (
-                        <label htmlFor="target_fund" className="flex flex-col">
-                            Jumlah Target Dana
-                            <input
-                                className="py-2 px-3 outline-none text-sm border border-gray-300 focus:border-blue-500 rounded-md"
-                                type="number"
-                                name="target_fund"
-                                id="target_fund"
-                                placeholder="Masukkan target dana"
-                                value={fundraiserAttr.target_fund}
-                                onChange={(e) =>
-                                    setFundraiserAttr({
-                                        ...fundraiserAttr,
-                                        target_fund: e.target.value,
-                                    })
-                                }
-                            />
-                            <span className="text-gray-500 text-sm py-2">
-                                Jumlah dana yang ingin dikumpulkan
-                            </span>
-                        </label>
-                    )}
-
-                    {data.type === "product_donation" && (
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col">
-                                <label className="text-gray-700 font-medium mb-2">Tambahkan Buku</label>
-                                <div className="flex flex-row gap-4">
-                                    <BookCollection
-                                        className="w-2/3"
-                                        selectedBooks={selectedBooks}
-                                        onChangeAmount={handleAddBook}
-                                        onDeleteBook={handleDeleteBook}
-                                    />
-                                    <SearchBook
-                                        className="w-1/3"
-                                        onAddbook={handleAddBook}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex flex-col">
-                                <label className="text-gray-700 font-medium mb-2">Tambahkan Barang</label>
-                                <div className="flex flex-row gap-4">
-                                    <FacilityCollection
-                                        className="w-full"
-                                        addedFacilities={addedFacilities}
-                                        onAddFacility={handleAddFacility}
-                                        onDeleteFacility={handleDeleteFacility}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <label htmlFor="title" className="flex flex-col">
-                        Judul Kampanye
-                        <input
-                            className="py-2 px-3 outline-none text-sm border border-gray-300 focus:border-blue-500 rounded-md"
-                            type="text"
-                            name="title"
-                            id="title"
-                            placeholder="Masukkan judul kampanye"
-                            value={data.title}
-                            onChange={(e) =>
-                                setData({ ...data, title: e.target.value })
-                            }
-                            required
-                        />
-                        <span className="text-gray-500 text-sm py-2">
-                            Judul kampanye yang akan ditampilkan
-                        </span>
-                    </label>
-
-                    <label htmlFor="description" className="flex flex-col">
-                        Deskripsi
-                        <textarea
-                            className="py-2 px-3 outline-none text-sm border border-gray-300 focus:border-blue-500 rounded-md"
-                            name="description"
-                            id="description"
-                            rows={4}
-                            placeholder="Masukkan deskripsi kampanye"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData({ ...data, description: e.target.value })
-                            }
-                        />
-                        <span className="text-gray-500 text-sm py-2">
-                            Deskripsi detail tentang kampanye
-                        </span>
-                    </label>
-
-                    <label htmlFor="header_image" className="flex flex-col">
-                        Gambar Header
-                        <input
-                            type="file"
-                            name="header"
-                            id="header"
-                            accept="image/*"
-                            onChange={handleHeaderImageUpload}
-                            className="p-2 border border-gray-300 rounded-md"
-                        />
-                        {previewImage && (
-                            <img
-                                src={previewImage}
-                                alt="header_image"
-                                className="mx-auto w-1/2 mt-2 rounded-md"
-                            />
-                        )}
-                    </label>
-
-                    {descriptions.map((inputField, index) =>
-                        typeof inputField.value === "string" ? (
-                            <DynamicTextDescription
-                                key={index}
-                                index={index}
-                                value={inputField.value}
-                                onChange={handleTextDescriptionChange}
-                                onRemove={handleRemoveFields}
-                            />
-                        ) : inputField.value instanceof File ? (
-                            <DynamicImageDescription
-                                key={index}
-                                index={index}
-                                url={URL.createObjectURL(inputField.value)}
-                                onChange={handleImageDescriptionChange}
-                                onRemove={handleRemoveFields}
-                            />
-                        ) : (
-                            <div key={index}></div>
-                        )
-                    )}
-
-                    <div className="flex flex-row gap-4">
-                        <AddTextDescriptionButton
-                            onClick={handleAddTextDescription}
-                        />
-                        <AddImageDescriptionButton
-                            onFileSelected={handleAddImageDescription}
-                        />
-                    </div>
-
-                    <div className="flex flex-row gap-2 mx-auto w-full mt-6">
-                        <button 
-                            onClick={() => navigate(-1)}
-                            className="p-2 w-full rounded-md text-red-500 font-medium border border-red-500 hover:bg-red-500 hover:text-white active:bg-red-600 transition-colors duration-100"
-                        >
-                            Kembali
-                        </button>
-                        <button
-                            className="p-2 w-full rounded-md text-green-500 font-medium border border-green-500 hover:bg-green-500 hover:text-white active:bg-green-600 transition-colors duration-100 disabled:opacity-50"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? "Menyimpan..." : "Konfirmasi"}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
+  const updateTextDescription = (
+    index: number,
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const { value } = e.target;
+    setTextDescriptions((prev) =>
+      prev.map((desc, i) => (i === index ? { ...desc, content: value } : desc))
     );
+  };
+
+  const removeTextDescription = (index: number) => {
+    setTextDescriptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addImageDescription = (file: File) => {
+    const newImage: ImageDescription = {
+      id: Date.now().toString(),
+      file,
+      url: URL.createObjectURL(file),
+    };
+    setImageDescriptions((prev) => [...prev, newImage]);
+  };
+
+  const removeImageDescription = (index: number) => {
+    setImageDescriptions((prev) => {
+      const removed = prev[index];
+      if (removed?.url) {
+        URL.revokeObjectURL(removed.url);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields correctly");
+      return;
+    }
+
+    if (!user) {
+      toast.error("User not found. Please login again.");
+      navigate("/auth/login");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrors({});
+
+      const formData = new FormData();
+      formData.append("campaign_type", form.campaign_type);
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+
+      if (form.campaign_type === "fund" && form.requested_fund_amount) {
+        formData.append("requested_fund_amount", form.requested_fund_amount);
+      }
+
+      if (form.campaign_type === "item" && form.requested_item_quantity) {
+        formData.append(
+          "requested_item_quantity",
+          form.requested_item_quantity
+        );
+      }
+
+      if (form.header_image) {
+        formData.append("header_image", form.header_image);
+      }
+
+      textDescriptions.forEach((desc, index) => {
+        if (desc.content.trim()) {
+          formData.append(`text_descriptions[${index}]`, desc.content);
+        }
+      });
+
+      imageDescriptions.forEach((img, index) => {
+        formData.append(`image_descriptions[${index}]`, img.file);
+      });
+
+      console.log("Creating campaign...");
+      const response = await apiService.createCampaign(formData);
+
+      if (response.success) {
+        toast.success(
+          "Campaign created successfully! Please wait for admin approval."
+        );
+        navigate("/dashboard/donor");
+      } else {
+        throw new Error("Failed to create campaign");
+      }
+    } catch (error: any) {
+      console.error("Campaign creation error:", error);
+
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        toast.error("Please check the form for errors");
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to create campaign. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <DonorLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DonorLayout>
+    );
+  }
+
+  return (
+    <DonorLayout>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Create New Campaign</h1>
+          <p className="text-muted-foreground mt-2">
+            Create a new fundraising or donation campaign
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Campaign Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="campaign_type">Campaign Type *</Label>
+                <select
+                  id="campaign_type"
+                  name="campaign_type"
+                  value={form.campaign_type}
+                  onChange={handleInputChange}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="fund">Fundraising Campaign</option>
+                  <option value="item">Item Donation Campaign</option>
+                </select>
+                {errors.campaign_type && (
+                  <p className="text-red-500 text-sm">{errors.campaign_type}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Campaign Title *</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  placeholder="Enter campaign title"
+                  value={form.title}
+                  onChange={handleInputChange}
+                  className={errors.title ? "border-red-500" : ""}
+                  required
+                />
+                {errors.title && (
+                  <p className="text-red-500 text-sm">{errors.title}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Campaign Description *</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="Describe your campaign"
+                  value={form.description}
+                  onChange={handleInputChange}
+                  className={errors.description ? "border-red-500" : ""}
+                  rows={4}
+                  required
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-sm">{errors.description}</p>
+                )}
+              </div>
+
+              {form.campaign_type === "fund" && (
+                <div className="space-y-2">
+                  <Label htmlFor="requested_fund_amount">
+                    Target Amount (IDR) *
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                      IDR
+                    </span>
+                    <Input
+                      id="requested_fund_amount"
+                      name="requested_fund_amount"
+                      type="text"
+                      placeholder="Enter target amount (min. 10,000)"
+                      value={form.requested_fund_amount}
+                      onChange={handleInputChange}
+                      className={`pl-12 ${
+                        errors.requested_fund_amount ? "border-red-500" : ""
+                      }`}
+                      required
+                    />
+                  </div>
+                  {form.requested_fund_amount && (
+                    <p className="text-sm text-gray-600">
+                      Target:{" "}
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                      }).format(parseFloat(form.requested_fund_amount) || 0)}
+                    </p>
+                  )}
+                  {errors.requested_fund_amount && (
+                    <p className="text-red-500 text-sm">
+                      {errors.requested_fund_amount}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {form.campaign_type === "item" && (
+                <div className="space-y-2">
+                  <Label htmlFor="requested_item_quantity">
+                    Target Item Quantity *
+                  </Label>
+                  <Input
+                    id="requested_item_quantity"
+                    name="requested_item_quantity"
+                    type="text"
+                    placeholder="Enter target quantity (e.g., 100)"
+                    value={form.requested_item_quantity}
+                    onChange={handleInputChange}
+                    className={
+                      errors.requested_item_quantity ? "border-red-500" : ""
+                    }
+                    required
+                  />
+                  {form.requested_item_quantity && (
+                    <p className="text-sm text-gray-600">
+                      Target: {parseInt(form.requested_item_quantity) || 0}{" "}
+                      items
+                    </p>
+                  )}
+                  {errors.requested_item_quantity && (
+                    <p className="text-red-500 text-sm">
+                      {errors.requested_item_quantity}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="header_image">Header Image *</Label>
+                <Input
+                  id="header_image"
+                  name="header_image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleInputChange}
+                  className={errors.header_image ? "border-red-500" : ""}
+                  required
+                />
+                {errors.header_image && (
+                  <p className="text-red-500 text-sm">{errors.header_image}</p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="text-lg font-semibold">Additional Content</h3>
+                  <div className="flex gap-2">
+                    <AddTextDescriptionButton onClick={addTextDescription} />
+                    <AddImageDescriptionButton
+                      onFileSelected={addImageDescription}
+                    />
+                  </div>
+                </div>
+
+                {textDescriptions.map((desc, index) => (
+                  <DynamicTextDescription
+                    key={desc.id}
+                    index={index}
+                    value={desc.content}
+                    onChange={updateTextDescription}
+                    onRemove={removeTextDescription}
+                  />
+                ))}
+
+                {imageDescriptions.map((img, index) => (
+                  <DynamicImageDescription
+                    key={img.id}
+                    index={index}
+                    url={img.url}
+                    onChange={() => {}}
+                    onRemove={removeImageDescription}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-4 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/dashboard/organizer")}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading} className="flex-1">
+                  {loading ? "Creating..." : "Create Campaign"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </DonorLayout>
+  );
 }

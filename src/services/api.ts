@@ -294,8 +294,35 @@ export const apiService = {
     return { data: [] };
   },
 
-  getOrganizerApplications: (page: number = 1, perPage: number = 10) =>
-    api.get(`/admin/organizer-applications?page=${page}&per_page=${perPage}`),
+  updateOrganizerApplicationStatus: async (
+      applicationId: string,
+      status: string,
+      message?: string
+    ) => {
+      try {
+        const response = await api.put("/organizer-applications", {
+          id: applicationId,
+          status: status,
+          message: message,
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Update organizer application status error:", error);
+        throw error;
+      }
+    },
+
+    getOrganizerApplications: async (page = 1, per_page = 10, status?: string) => {
+      try {
+        const response = await api.get("/organizer-applications", {
+          params: { page, per_page, status },
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Get organizer applications error:", error);
+        throw error;
+      }
+    },
 
   approveOrganizerApplication: (id: string) =>
     api.post(`/admin/organizer-applications/${id}/approve`),
@@ -357,13 +384,37 @@ export const apiService = {
     }
   },
 
+  getIdentity: async () => {
+    const response = await api.get('/identity');
+    return response.data;
+  },
+
+  createIdentity: async (data: FormData) => {
+    const response = await api.post('/identity', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updateIdentity: async (data: FormData) => {
+    const response = await api.put('/identity', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+
+
   admin: {
-     getUsers: async (page = 1, per_page = 10) => {
+    getUsers: async (page = 1, per_page = 10) => {
       try {
         const response = await api.get("/admin/users", {
           params: { page, per_page },
         });
-        console.log("Get users response:", response.data);  
         return response.data;
       } catch (error) {
         console.error("Get users error:", error);
@@ -491,5 +542,7 @@ export const apiService = {
     },
   },
 };
+
+
 
 export default api;

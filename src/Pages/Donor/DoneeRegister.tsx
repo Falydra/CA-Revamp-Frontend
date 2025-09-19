@@ -6,13 +6,17 @@ import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
-import axios from "axios";
-import type { User } from "@/types";
+import type { User, Identity, OrganizerApplication } from "@/types";
+import { apiService } from "@/services/api";
 
 export default function DoneeRegister() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingIdentity, setCheckingIdentity] = useState(true);
+  const [hasIdentity, setHasIdentity] = useState(false);
+  const [existingApplication, setExistingApplication] =
+    useState<OrganizerApplication | null>(null);
   const [form, setForm] = useState({
     full_name: "",
     phone_number: "",
@@ -20,14 +24,6 @@ export default function DoneeRegister() {
     date_of_birth: "",
     nik: "",
     id_card_image: null as File | null,
-    address_detail: "",
-    rt: "",
-    rw: "",
-    kelurahan: "",
-    kecamatan: "",
-    city: "",
-    province: "",
-    postal_code: "",
   });
   const [errors, setErrors] = useState<any>({});
 
@@ -37,21 +33,62 @@ export default function DoneeRegister() {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
-
         setForm((prev) => ({
           ...prev,
           full_name: userData.name || "",
-          phone_number: userData.phone || "",
         }));
+        checkUserIdentityAndApplication();
       } catch (error) {
         console.error("Error parsing user data:", error);
         navigate("/auth/login");
       }
     } else {
-      toast.error("Please login to register as donee");
+      toast.error("Please login to register as initiator");
       navigate("/auth/login");
     }
   }, [navigate]);
+
+  const checkUserIdentityAndApplication = async () => {
+    try {
+      setCheckingIdentity(true);
+
+      try {
+        const identityResponse = await apiService.getIdentity();
+        if (identityResponse.success && identityResponse.data) {
+          setHasIdentity(true);
+
+          const identity = identityResponse.data;
+          setForm((prev) => ({
+            ...prev,
+            full_name: identity.full_name || prev.full_name,
+            phone_number: identity.phone_number || "",
+            gender: identity.gender || "",
+            date_of_birth: identity.date_of_birth || "",
+            nik: identity.nik || "",
+          }));
+        }
+      } catch (identityError: any) {
+        if (identityError.response?.status !== 404) {
+          console.error("Error checking identity:", identityError);
+        }
+      }
+
+      try {
+        const applicationResponse = await apiService.getOrganizerApplication();
+        if (applicationResponse.success && applicationResponse.data) {
+          setExistingApplication(applicationResponse.data);
+        }
+      } catch (applicationError: any) {
+        if (applicationError.response?.status !== 404) {
+          console.error("Error checking application:", applicationError);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking user status:", error);
+    } finally {
+      setCheckingIdentity(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -96,40 +133,8 @@ export default function DoneeRegister() {
       newErrors.nik = "NIK must be exactly 16 digits";
     }
 
-    if (!form.id_card_image) {
+    if (!hasIdentity && !form.id_card_image) {
       newErrors.id_card_image = "ID card image is required";
-    }
-
-    if (!form.address_detail.trim()) {
-      newErrors.address_detail = "Address detail is required";
-    }
-
-    if (!form.rt.trim()) {
-      newErrors.rt = "RT is required";
-    }
-
-    if (!form.rw.trim()) {
-      newErrors.rw = "RW is required";
-    }
-
-    if (!form.kelurahan.trim()) {
-      newErrors.kelurahan = "Kelurahan is required";
-    }
-
-    if (!form.kecamatan.trim()) {
-      newErrors.kecamatan = "Kecamatan is required";
-    }
-
-    if (!form.city.trim()) {
-      newErrors.city = "City is required";
-    }
-
-    if (!form.province.trim()) {
-      newErrors.province = "Province is required";
-    }
-
-    if (!form.postal_code.trim()) {
-      newErrors.postal_code = "Postal code is required";
     }
 
     setErrors(newErrors);
@@ -154,65 +159,68 @@ export default function DoneeRegister() {
       setLoading(true);
       setErrors({});
 
-      const formData = new FormData();
+      if (!hasIdentity) {
+        const formData = new FormData();
+        formData.append("full_name", form.full_name);
+        formData.append("phone_number", form.phone_number);
+        formData.append("gender", form.gender);
+        formData.append("date_of_birth", form.date_of_birth);
+        formData.append("nik", form.nik);
 
-      formData.append("user_id", user.user_id);
-
-      Object.entries(form).forEach(([key, value]) => {
-        if (value !== null && value !== "") {
-          if (key === "id_card_image" && value instanceof File) {
-            formData.append(key, value);
-          } else if (typeof value === "string") {
-            formData.append(key, value);
-          }
+        if (form.id_card_image) {
+          formData.append("id_card_image", form.id_card_image);
         }
-      });
 
-      console.log("Submitting donee registration...");
+        console.log("Creating identity...");
+        const identityResponse = await apiService.createIdentity(formData);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/v1/donee-register",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            "Content-Type": "multipart/form-data",
-          },
+        if (!identityResponse.success) {
+          throw new Error("Failed to create identity");
         }
-      );
 
-      if (response.data.success) {
+        setHasIdentity(true);
+        toast.success("Identity information saved successfully");
+      } else {
+        const formData = new FormData();
+        formData.append("full_name", form.full_name);
+        formData.append("phone_number", form.phone_number);
+        formData.append("gender", form.gender);
+        formData.append("date_of_birth", form.date_of_birth);
+        formData.append("nik", form.nik);
+
+        if (form.id_card_image) {
+          formData.append("id_card_image", form.id_card_image);
+        }
+
+        console.log("Updating identity...");
+        await apiService.updateIdentity(formData);
+        toast.success("Identity information updated successfully");
+      }
+
+      console.log("Submitting organizer application...");
+      const applicationResponse = await apiService.createOrganizerApplication();
+
+      if (applicationResponse.success) {
         toast.success(
-          "Registration successful! Please wait for admin verification."
+          "Initiator application submitted successfully! Please wait for admin review."
         );
 
-        setForm({
-          full_name: "",
-          phone_number: "",
-          gender: "",
-          date_of_birth: "",
-          nik: "",
-          id_card_image: null,
-          address_detail: "",
-          rt: "",
-          rw: "",
-          kelurahan: "",
-          kecamatan: "",
-          city: "",
-          province: "",
-          postal_code: "",
-        });
-
         navigate("/dashboard/donor");
+      } else {
+        throw new Error("Failed to submit organizer application");
       }
     } catch (error: any) {
-      console.error("Donee registration error:", error);
+      console.error("Initiator registration error:", error);
 
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
         toast.error("Please check the form for errors");
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
+      } else if (error.response?.data?.error === "identities") {
+        toast.error("Please complete your identity information first");
+      } else if (error.response?.data?.error === "organizer_applications") {
+        toast.error("You already have an active application");
       } else {
         toast.error("Registration failed. Please try again.");
       }
@@ -220,6 +228,74 @@ export default function DoneeRegister() {
       setLoading(false);
     }
   };
+
+  if (checkingIdentity) {
+    return (
+      <DonorLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DonorLayout>
+    );
+  }
+
+  if (existingApplication) {
+    return (
+      <DonorLayout>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p>You already have an organizer application.</p>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Status:</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        existingApplication.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : existingApplication.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {existingApplication.status.charAt(0).toUpperCase() +
+                        existingApplication.status.slice(1)}
+                    </span>
+                  </div>
+                  {existingApplication.status === "pending" && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Your application is being reviewed by our admin team.
+                    </p>
+                  )}
+                  {existingApplication.status === "approved" && (
+                    <p className="text-sm text-green-600 mt-2">
+                      Congratulations! Your application has been approved.
+                    </p>
+                  )}
+                  {existingApplication.status === "rejected" && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Your application was rejected. Please contact support for
+                      more information.
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={() => navigate("/dashboard/donor")}
+                  className="w-full"
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DonorLayout>
+    );
+  }
 
   if (!user) {
     return (
@@ -237,9 +313,17 @@ export default function DoneeRegister() {
         <div className="text-center">
           <h1 className="text-3xl font-bold">Register as Initiator</h1>
           <p className="text-muted-foreground mt-2">
-            Please fill in the information below correctly to register as a
+            Please fill in the information below correctly to register as an
             Initiator.
           </p>
+          {hasIdentity && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                ✓ Identity information found. You can review and update the
+                details below.
+              </p>
+            </div>
+          )}
         </div>
 
         <Card>
@@ -357,7 +441,9 @@ export default function DoneeRegister() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="id_card_image">ID Card Image *</Label>
+                    <Label htmlFor="id_card_image">
+                      ID Card Image {!hasIdentity && "*"}
+                    </Label>
                     <Input
                       id="id_card_image"
                       name="id_card_image"
@@ -365,163 +451,16 @@ export default function DoneeRegister() {
                       accept="image/*"
                       onChange={handleChange}
                       className={errors.id_card_image ? "border-red-500" : ""}
-                      required
+                      required={!hasIdentity}
                     />
+                    {hasIdentity && (
+                      <p className="text-sm text-gray-600">
+                        Upload a new image to update your existing ID card image
+                      </p>
+                    )}
                     {errors.id_card_image && (
                       <p className="text-red-500 text-sm">
                         {errors.id_card_image}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">
-                  Address Information
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address_detail">Address Detail *</Label>
-                    <Input
-                      id="address_detail"
-                      name="address_detail"
-                      placeholder="Street name, building, house number"
-                      value={form.address_detail}
-                      onChange={handleChange}
-                      className={errors.address_detail ? "border-red-500" : ""}
-                      required
-                    />
-                    {errors.address_detail && (
-                      <p className="text-red-500 text-sm">
-                        {errors.address_detail}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rt">RT *</Label>
-                      <Input
-                        id="rt"
-                        name="rt"
-                        placeholder="RT"
-                        value={form.rt}
-                        onChange={handleChange}
-                        className={errors.rt ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.rt && (
-                        <p className="text-red-500 text-sm">{errors.rt}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="rw">RW *</Label>
-                      <Input
-                        id="rw"
-                        name="rw"
-                        placeholder="RW"
-                        value={form.rw}
-                        onChange={handleChange}
-                        className={errors.rw ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.rw && (
-                        <p className="text-red-500 text-sm">{errors.rw}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="kelurahan">Kelurahan / Village *</Label>
-                      <Input
-                        id="kelurahan"
-                        name="kelurahan"
-                        placeholder="Enter Kelurahan / Village"
-                        value={form.kelurahan}
-                        onChange={handleChange}
-                        className={errors.kelurahan ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.kelurahan && (
-                        <p className="text-red-500 text-sm">
-                          {errors.kelurahan}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="kecamatan">Kecamatan / District *</Label>
-                      <Input
-                        id="kecamatan"
-                        name="kecamatan"
-                        placeholder="Enter Kecamatan / District"
-                        value={form.kecamatan}
-                        onChange={handleChange}
-                        className={errors.kecamatan ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.kecamatan && (
-                        <p className="text-red-500 text-sm">
-                          {errors.kecamatan}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City / Regency *</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        placeholder="Enter City / Regency"
-                        value={form.city}
-                        onChange={handleChange}
-                        className={errors.city ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.city && (
-                        <p className="text-red-500 text-sm">{errors.city}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="province">Province *</Label>
-                      <Input
-                        id="province"
-                        name="province"
-                        placeholder="Enter Province"
-                        value={form.province}
-                        onChange={handleChange}
-                        className={errors.province ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.province && (
-                        <p className="text-red-500 text-sm">
-                          {errors.province}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="postal_code">Postal Code *</Label>
-                    <Input
-                      id="postal_code"
-                      name="postal_code"
-                      placeholder="Enter Postal Code"
-                      value={form.postal_code}
-                      onChange={handleChange}
-                      className={errors.postal_code ? "border-red-500" : ""}
-                      required
-                    />
-                    {errors.postal_code && (
-                      <p className="text-red-500 text-sm">
-                        {errors.postal_code}
                       </p>
                     )}
                   </div>
@@ -538,7 +477,7 @@ export default function DoneeRegister() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? "Registering..." : "Register as Donee"}
+                  {loading ? "Processing..." : "Apply as Initiator"}
                 </Button>
               </div>
             </form>

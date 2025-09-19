@@ -57,22 +57,8 @@ export type Organizer = {
 }
 
 export type OrganizerApplication = {
-  application_id: string;
+  organizer_application_id: string;
   user_id: string;
-  full_name: string;
-  phone_number: string;
-  gender: string;
-  date_of_birth: string;
-  nik: string;
-  id_card_image?: string | null;
-  address_detail: string;
-  rt: string;
-  rw: string;
-  kelurahan: string;
-  kecamatan: string;
-  city: string;
-  province: string;
-  postal_code: string;
   status: "pending" | "approved" | "rejected";
   reviewed_at?: string | null;
   created_at?: string;
@@ -295,21 +281,31 @@ export type UserProfile = {
   profile_picture: string | null;
 } | null;
 
-export type UserIdentity = {
-  nik: string;
+export interface Identity {
+  id: string;
+  user_id: string;
   full_name: string;
+  phone_number: string;
+  gender: 'male' | 'female' | 'other';
+  date_of_birth: string;
+  nik: string;
   id_card_image: string | null;
-  verified_at: string | null;
-  address: Address;
-};
+  created_at: string;
+  updated_at: string;
+}
 
-export type Address = {
-  address_detail: string | null;
-  rt: string | null;
-  rw: string | null;
-  kelurahan: string | null;
-  kecamatan: string | null;
-  city: string | null;
-  province: string | null;
-  postal_code: string | null;
-} | null;
+
+export interface Address {
+  id: string;
+  user_id: string;
+  address_detail: string;
+  rt: string;
+  rw: string;
+  kelurahan: string;
+  kecamatan: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  created_at: string;
+  updated_at: string;
+}

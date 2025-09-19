@@ -156,9 +156,7 @@ export default function ShowDonation() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Campaign Image */}
             {campaign.attributes.header_image_url && (
               <Card>
                 <CardContent className="p-0">
@@ -180,7 +178,6 @@ export default function ShowDonation() {
               </Card>
             )}
 
-            {/* Campaign Description */}
             <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>
@@ -193,16 +190,13 @@ export default function ShowDonation() {
               </CardContent>
             </Card>
 
-            {/* Donations List */}
             <DonatedItemList
               campaignId={campaign.id}
               campaignType={campaign.type as "fundraiser" | "product_donation"}
             />
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Progress Card */}
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Progress</CardTitle>
@@ -257,7 +251,6 @@ export default function ShowDonation() {
               </CardContent>
             </Card>
 
-            {/* Campaign Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Info</CardTitle>

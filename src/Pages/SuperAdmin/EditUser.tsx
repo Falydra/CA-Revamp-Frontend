@@ -18,11 +18,9 @@ export default function EditUser() {
   });
 
   useEffect(() => {
-    
     if (id) {
       console.log("Fetching user data for ID:", id);
-      
-      
+
       setData({
         name: "Example User",
         email: "user@example.com",
@@ -37,10 +35,8 @@ export default function EditUser() {
     setErrors({});
 
     try {
-      // TODO: Implement API call to update user
       console.log("Updating user:", { id, ...data });
 
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       toast.success("User updated successfully!");

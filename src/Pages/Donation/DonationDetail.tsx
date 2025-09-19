@@ -62,14 +62,14 @@ export default function DonationDetail() {
         const campaignResponse = await apiService.getCampaign(id);
         if (campaignResponse.status === "success") {
           const campaignData = campaignResponse.data;
-          const type = campaignData.attributes.requested_item_quantity 
+          const type = campaignData.attributes.requested_item_quantity
             ? "product_donation"
             : "fundraiser";
           setCampaign(campaignData);
 
           if (type === "fundraiser") {
             try {
-              const fundsResponse = await apiService.getFunds(id, {});
+              const fundsResponse = await apiService.getFunds(id);
               if (fundsResponse.data?.success) {
                 setFunds(fundsResponse.data.data || []);
               }
@@ -199,7 +199,7 @@ export default function DonationDetail() {
 
     try {
       const payload = {
-        id: campaign.id,
+        campaign_id: campaign.id,
         donor_id: user.user_id,
         amount: paymentAmount,
         status: "pending",
@@ -238,7 +238,7 @@ export default function DonationDetail() {
 
       for (const bookSelection of selectedBooks) {
         const payload = {
-          id: campaign.id,
+          campaign_id: campaign.id,
           book_isbn: bookSelection.isbn,
           donor_id: user.user_id,
           donor_name: donorName || user.name,
@@ -251,7 +251,7 @@ export default function DonationDetail() {
 
       for (const supplySelection of selectedSupplies) {
         const payload = {
-          id: campaign.id,
+          campaign_id: campaign.id,
           requested_supply_id: supplySelection.requested_supply_id,
           donor_id: user.user_id,
           donor_name: donorName || user.name,
@@ -302,7 +302,9 @@ export default function DonationDetail() {
     );
   }
 
-  const type = campaign.attributes.requested_item_quantity ? "product_donation" : "fundraiser";
+  const type = campaign.attributes.requested_item_quantity
+    ? "product_donation"
+    : "fundraiser";
   const progressPercentage =
     type === "fundraiser"
       ? campaign.attributes.requested_fund_amount > 0
@@ -770,7 +772,6 @@ export default function DonationDetail() {
           </div>
         )}
 
-        {/* Fund Donation Modal */}
         {paymentModal && user && (
           <div className="fixed z-50 inset-0 bg-black backdrop-blur-md bg-opacity-50 flex text-primary-bg items-center justify-center">
             <div className="bg-white w-1/3 h-5/6 rounded-xl flex flex-col">
@@ -804,8 +805,9 @@ export default function DonationDetail() {
                 <h1 className="text-xl font-bold self-start">Detail Donasi</h1>
                 <div className="w-full h-[75px] flex rounded-xl items-center flex-row gap-4 justify-start">
                   <div className="w-12 h-12 flex items-center aspect-square justify-center rounded-full bg-primary-accent cursor-pointer text-white">
-                    {campaign.relationships?.organizer?.attributes?.name?.charAt(0) ||
-                      "O"}
+                    {campaign.relationships?.organizer?.attributes?.name?.charAt(
+                      0
+                    ) || "O"}
                   </div>
                   <div className="w-full flex-col items-start justify-center flex">
                     <h1 className="text-lg font-bold">

@@ -16,7 +16,6 @@ import {
   Clock,
   MoreHorizontal,
   Trash2,
-  
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -382,7 +381,7 @@ export default function ManageDonations() {
                                   </span>
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {campaignData.requested_fund_amount > 0  ? (
+                                  {campaignData.requested_fund_amount > 0 ? (
                                     <>
                                       Rp{" "}
                                       {formatPrice(
@@ -428,7 +427,7 @@ export default function ManageDonations() {
                                       View Details
                                     </Link>
                                   </DropdownMenuItem>
-                                  
+
                                   {campaignData.status === "pending" && (
                                     <>
                                       <DropdownMenuItem
@@ -490,7 +489,6 @@ export default function ManageDonations() {
                   </Table>
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-4">
                     <div className="text-sm text-muted-foreground">

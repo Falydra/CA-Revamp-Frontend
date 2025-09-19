@@ -41,35 +41,42 @@ export default function ManageUsers() {
   const [perPage] = useState(10);
 
   const fetchUsers = async (page = 1, search?: string) => {
-  try {
-    const response = await apiService.admin.getUsers(page, perPage);
-    
+    try {
+      const response = await apiService.admin.getUsers(page, perPage);
 
-    const payload = response?.success ? response.data : response;
+      const payload = response?.success ? response.data : response;
 
-    
-    if (payload && (Array.isArray(payload.data) || payload.data === undefined)) {
-     
-      const usersArray = Array.isArray(payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);
-      setUsers(usersArray || []);
-      setTotalPages(payload.last_page ?? (payload.meta?.last_page ?? 1));
-      setCurrentPage(payload.current_page ?? (payload.meta?.current_page ?? page));
-      setTotalUsers(payload.total ?? (payload.meta?.total ?? usersArray.length));
-    } else {
+      if (
+        payload &&
+        (Array.isArray(payload.data) || payload.data === undefined)
+      ) {
+        const usersArray = Array.isArray(payload.data)
+          ? payload.data
+          : Array.isArray(payload)
+          ? payload
+          : [];
+        setUsers(usersArray || []);
+        setTotalPages(payload.last_page ?? payload.meta?.last_page ?? 1);
+        setCurrentPage(
+          payload.current_page ?? payload.meta?.current_page ?? page
+        );
+        setTotalUsers(
+          payload.total ?? payload.meta?.total ?? usersArray.length
+        );
+      } else {
+        setUsers([]);
+        toast.error("Failed to load users");
+      }
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      if (error?.response?.status === 403) {
+        toast.error("Access denied. Admin privileges required.");
+      } else {
+        toast.error("Failed to load users");
+      }
       setUsers([]);
-      toast.error("Failed to load users");
     }
-  } catch (error: any) {
-    console.error("Error fetching users:", error);
-    if (error?.response?.status === 403) {
-      toast.error("Access denied. Admin privileges required.");
-    } else {
-      toast.error("Failed to load users");
-    }
-    setUsers([]);
-  }
-};
-
+  };
 
   useEffect(() => {
     fetchUsers(1);
@@ -285,7 +292,6 @@ export default function ManageUsers() {
                   </Table>
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-4">
                     <div className="text-sm text-muted-foreground">

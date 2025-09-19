@@ -19,6 +19,7 @@ import ManageApplication from "@/Pages/Admin/ManageApplication";
 import ManageDonations from "@/Pages/Admin/ManageDonations";
 import ManageUsers from "@/Pages/Admin/ManageUsers";
 import AdminProfile from "@/Pages/Admin/Profile";
+import CreateDonation from "@/Pages/Donation/Create";
 
 
 import "./index.css";
@@ -31,7 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
           <Routes>
-            <Route path="/" element={<Welcome />} />
+             <Route path="/" element={<Welcome />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/donation" element={<Campaign />} />
             <Route path="/donation/:id" element={<DonationDetail />} />
@@ -41,9 +42,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/dashboard/donor/history" element={<DonationHistory />} />
             <Route path="/dashboard/donor/profile" element={<DonorProfile />} />
             <Route path="/dashboard/donor/profile/registration" element={<DoneeRegister />} />
-             <Route path="/dashboard/donee" element={<DoneeDashboard />} />
-            <Route path="/dashboard/donee/donations" element={<ActiveDonation />} />
-            <Route path="/dashboard/donee/profile" element={<DoneeProfile />} />
+            <Route path="/dashboard/organizer" element={<DoneeDashboard />} />
+            <Route path="/dashboard/organizer/donations" element={<ActiveDonation />} />
+            <Route path="/dashboard/organizer/create" element={<CreateDonation/>} />
+            <Route path="/dashboard/organizer/profile" element={<DoneeProfile />} />
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
             <Route path="/dashboard/admin/manage-application" element={<ManageApplication />} />
             <Route path="/dashboard/admin/manage-donations" element={<ManageDonations />} />

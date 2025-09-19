@@ -99,7 +99,7 @@ export default function ActiveDonation() {
 
   return (
     <DoneeLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Your Donation Campaigns</h1>
@@ -200,13 +200,7 @@ export default function ActiveDonation() {
                   <div className="aspect-video relative overflow-hidden rounded-t-lg">
                     <img
                       src={
-                        campaignData.header_image_url
-                          ? campaignData.header_image_url.startsWith(
-                              "/storage/"
-                            )
-                            ? `http://localhost:8000${campaignData.header_image_url}`
-                            : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                          : "/images/Charity1.jpeg"
+                        campaignData.header_image_url || "/images/Charity1.jpeg"
                       }
                       alt={campaignData.title || "Campaign"}
                       className="w-full h-full object-cover"
