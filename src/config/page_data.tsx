@@ -37,30 +37,30 @@ export const DonorPage = {
     },
 };
 
-export const DoneePage = {
+export const OrganizerPage = {
     mainPage: {
         items: [
             {
+                title: "Dashboard",
+                url: "/dashboard/organizer",
+                isActive: false,
+            },
+            {
                 title: "Donasi Dibuka",
-                url: "/dashboard/donee/donations",
+                url: "/dashboard/organizer/donations",
                 isActive: false,
                
             },
             {
                 title: "Buka Donasi Baru",
-                url: "/dashboard/donee/donations/create",
+                url: "/dashboard/organizer/create",
                 isActive: false,
               
             },
-            {
-                title: "Modifikasi Donasi",
-                url: "/dashboard/donee/edit-donation",
-                isActive: false,
-               
-            },
+        
             {
                 title: "Profile",
-                url: "/dashboard/donee/profile",
+                url: "/dashboard/organizer/profile",
                 isActive: false,
                 
             },
