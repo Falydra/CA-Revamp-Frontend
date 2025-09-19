@@ -17,8 +17,12 @@ import {
 } from "lucide-react";
 
 function formatPrice(value: number): string {
+  if (value == 0) {
+    return "0";
+  }
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+
 
 export default function AdminDashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -80,7 +84,7 @@ export default function AdminDashboard() {
           console.log("Could not fetch users count", error);
         }
 
-        // Calculate stats from campaign data
+        
         const totalCampaigns = campaignList.length;
         const pendingCampaigns = campaignList.filter(
           (c: Campaign) => c.attributes?.status === "pending"
@@ -89,7 +93,6 @@ export default function AdminDashboard() {
           (c: Campaign) => c.attributes?.status === "on_progress"
         ).length;
 
-        // Calculate fund-related stats
         const totalFundsRaised = campaignList.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.donated_fund_amount || 0;
@@ -106,7 +109,6 @@ export default function AdminDashboard() {
           0
         );
 
-        // Calculate item-related stats
         const totalItemsRequired = campaignList.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.requested_item_quantity || 0;
@@ -123,7 +125,6 @@ export default function AdminDashboard() {
           0
         );
 
-        // Use API stats if available, otherwise use calculated stats
         setStats({
           totalUsers: apiStats?.total_users || totalUsers,
           totalCampaigns: apiStats?.total_campaigns || totalCampaigns,
@@ -362,13 +363,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-4">
                         <img
                           src={
-                            campaignData.header_image_url
-                              ? campaignData.header_image_url.startsWith(
-                                  "/storage/"
-                                )
-                                ? `http://localhost:8000${campaignData.header_image_url}`
-                                : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                              : "/images/Charity1.jpeg"
+                            campaignData.header_image_url || "/images/Charity1.jpeg"
                           }
                           alt={campaignData.title || "Campaign"}
                           className="w-16 h-16 object-cover rounded-md"
@@ -432,13 +427,13 @@ export default function AdminDashboard() {
                             </p>
                           </>
                         )}
-                        <div className="flex gap-1 mt-2">
+                        <div className="flex gap-1 mt-2 justify-end">
                           <Link
                             to={`/campaigns/${
                               campaignData.slug || campaign.id
                             }`}
                           >
-                            <Button variant="ghost" size="sm">
+                            <Button variant="outline" size="sm">
                               View
                             </Button>
                           </Link>

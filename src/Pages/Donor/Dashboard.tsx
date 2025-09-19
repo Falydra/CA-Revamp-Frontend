@@ -7,8 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 
 function formatPrice(value: number): string {
+  if (value == 0) {
+    return "0";
+  }
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+
 
 export default function DonorDashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -223,13 +227,8 @@ export default function DonorDashboard() {
                   >
                     <img
                       src={
-                        campaignData.header_image_url
-                          ? campaignData.header_image_url.startsWith(
-                              "/storage/"
-                            )
-                            ? `http://localhost:8000${campaignData.header_image_url}`
-                            : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                          : "/images/Charity1.jpeg"
+                        campaignData.header_image_url || "/images/Charity1.jpeg"
+                        
                       }
                       alt={campaignData.title || "Campaign"}
                       className="w-full h-32 object-cover rounded-md mb-3"

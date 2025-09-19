@@ -3,11 +3,14 @@ import { Link } from "react-router-dom";
 import DoneeLayout from "@/Layout/AuthenticatedLayout";
 import { apiService } from "@/services/api";
 import type { User, Campaign } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Card, CardContent,  CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 
 function formatPrice(value: number): string {
+  if (value == 0) {
+    return "0";
+  }
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
@@ -74,6 +77,7 @@ export default function DoneeDashboard() {
     loadDashboardData();
   }, []);
 
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "on_progress":
@@ -101,9 +105,8 @@ export default function DoneeDashboard() {
 
   return (
     <DoneeLayout>
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-lg">
+      <div className="space-y-6 p-4">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome, {user?.name || "Initiator"}!
           </h1>
@@ -112,7 +115,6 @@ export default function DoneeDashboard() {
           </p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -169,7 +171,6 @@ export default function DoneeDashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -212,7 +213,6 @@ export default function DoneeDashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Campaigns */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Recent Campaigns</CardTitle>
@@ -225,7 +225,7 @@ export default function DoneeDashboard() {
           <CardContent>
             {campaigns.length > 0 ? (
               <div className="space-y-4">
-                {campaigns.slice(0, 5).map((campaign) => {
+                {campaigns.slice(0, 2).map((campaign) => {
                   const campaignData = campaign.attributes || campaign;
                   const progress =
                     campaignData.requested_fund_amount > 0
@@ -244,13 +244,7 @@ export default function DoneeDashboard() {
                       <div className="flex items-center gap-4">
                         <img
                           src={
-                            campaignData.header_image_url
-                              ? campaignData.header_image_url.startsWith(
-                                  "/storage/"
-                                )
-                                ? `http://localhost:8000${campaignData.header_image_url}`
-                                : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                              : "/images/Charity1.jpeg"
+                            campaignData.header_image_url || "/images/Charity1.jpeg"
                           }
                           alt={campaignData.title || "Campaign"}
                           className="w-16 h-16 object-cover rounded-md"
@@ -283,32 +277,10 @@ export default function DoneeDashboard() {
                       </div>
 
                       <div className="text-right">
-                        {campaign.type === "fundraiser" ? (
-                          <>
-                            <p className="font-bold">
-                              Rp{" "}
-                              {formatPrice(
-                                campaignData.donated_fund_amount || 0
-                              )}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              / Rp{" "}
-                              {formatPrice(
-                                campaignData.requested_fund_amount || 0
-                              )}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-bold">
-                              {campaignData.donated_item_quantity || 0} items
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              / {campaignData.requested_item_quantity || 0}{" "}
-                              needed
-                            </p>
-                          </>
-                        )}
+                        <p className="font-bold">
+                          Rp {formatPrice(campaignData.donated_fund_amount)} / Rp{" "}
+                          {formatPrice(campaignData.requested_fund_amount)}
+                        </p>
                         <Link
                           to={`/campaigns/${campaignData.slug || campaign.id}`}
                         >
@@ -317,7 +289,9 @@ export default function DoneeDashboard() {
                           </Button>
                         </Link>
                       </div>
+                      
                     </div>
+                    
                   );
                 })}
               </div>
@@ -330,6 +304,8 @@ export default function DoneeDashboard() {
               </div>
             )}
           </CardContent>
+        
+          
         </Card>
       </div>
     </DoneeLayout>
