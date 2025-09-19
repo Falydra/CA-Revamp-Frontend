@@ -1,9 +1,5 @@
 import type { Campaign, RequestedBook, RequestedSupply, User } from "@/types";
-import {
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import {
   Carousel,
   CarouselContent,
@@ -25,12 +21,12 @@ import { toast } from "sonner";
 type bookData = {
   isbn: string;
   quantity: number;
-}
+};
 
 type supplyData = {
   id: string;
   quantity: number;
-}
+};
 
 type RequestData = {
   username?: string;
@@ -38,17 +34,17 @@ type RequestData = {
   delivery_service?: string;
   resi?: string;
   books?: bookData[];
-  supplies?: supplyData[]
-}
+  supplies?: supplyData[];
+};
 
 type ErrorFields = {
   packagePicture: boolean;
   deliveryService: boolean;
   trackingNumber: boolean;
-}
+};
 
 interface DonateItemFormProps {
-  campaign: Campaign | null,
+  campaign: Campaign | null;
   requestedBooks?: RequestedBook[];
   requestedSupplies?: RequestedSupply[];
 }
@@ -56,7 +52,7 @@ interface DonateItemFormProps {
 export default function DonateItemForm({
   campaign,
   requestedBooks,
-  requestedSupplies
+  requestedSupplies,
 }: DonateItemFormProps) {
   const user: User = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user") || "{}")
@@ -67,7 +63,7 @@ export default function DonateItemForm({
   const [errorFields, setErrorFields] = useState<ErrorFields>({
     packagePicture: false,
     deliveryService: false,
-    trackingNumber: false
+    trackingNumber: false,
   });
 
   const toggleBookSelection = (book: RequestedBook, checked: boolean) => {
@@ -81,15 +77,15 @@ export default function DonateItemForm({
       if (checked) {
         books.push({
           isbn: book.id,
-          quantity: 1
+          quantity: 1,
         });
       } else {
         books = books.filter((b) => b.isbn != book.id);
       }
 
       return { ...prev, books };
-    })
-  }
+    });
+  };
 
   const toggleSupplySelection = (supply: RequestedSupply, checked: boolean) => {
     if (slidePage != 0) {
@@ -102,27 +98,27 @@ export default function DonateItemForm({
       if (checked) {
         supplies.push({
           id: supply.id,
-          quantity: 1
+          quantity: 1,
         });
       } else {
         supplies = supplies.filter((s) => s.id != supply.id);
       }
 
       return { ...prev, supplies };
-    })
-  }
+    });
+  };
 
   const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || undefined;
     setRequestData((prev) => ({
       ...prev,
-      package_picture: file
+      package_picture: file,
     }));
     setErrorFields((prev) => ({
       ...prev,
-      packagePicture: false
+      packagePicture: false,
     }));
-  }
+  };
 
   const handleSubmitDonation = async () => {
     try {
@@ -134,17 +130,20 @@ export default function DonateItemForm({
         } else {
           setErrorFields((prev) => ({
             ...prev,
-            packagePicture: true
-          }))
+            packagePicture: true,
+          }));
         }
 
         if (requestData.delivery_service) {
-          formData.append("delivery_service", String(requestData.delivery_service));
+          formData.append(
+            "delivery_service",
+            String(requestData.delivery_service)
+          );
         } else {
           setErrorFields((prev) => ({
             ...prev,
-            deliveryService: true
-          }))
+            deliveryService: true,
+          }));
         }
 
         if (requestData.resi) {
@@ -152,11 +151,10 @@ export default function DonateItemForm({
         } else {
           setErrorFields((prev) => ({
             ...prev,
-            trackingNumber: true
-          }))
+            trackingNumber: true,
+          }));
         }
 
-        // append supplies
         if (requestData.supplies) {
           requestData.supplies.forEach((supply, index) => {
             Object.entries(supply).forEach(([key, value]) => {
@@ -165,7 +163,6 @@ export default function DonateItemForm({
           });
         }
 
-        // append books
         if (requestData.books) {
           requestData.books.forEach((book, index) => {
             Object.entries(book).forEach(([key, value]) => {
@@ -175,16 +172,22 @@ export default function DonateItemForm({
         }
 
         if (requestData.username) {
-          formData.append("username", String(requestData.username))
+          formData.append("username", String(requestData.username));
         } else {
-          formData.append("username", String("Kind Person"))
+          formData.append("username", String("Kind Person"));
         }
 
-        if (!(errorFields.deliveryService || errorFields.packagePicture || errorFields.trackingNumber)) {
+        if (
+          !(
+            errorFields.deliveryService ||
+            errorFields.packagePicture ||
+            errorFields.trackingNumber
+          )
+        ) {
           const response = await apiService.createDonation(
             campaign.attributes.slug,
             formData
-          )
+          );
 
           if (response.success) {
             toast("Success! please wait for verification");
@@ -193,15 +196,13 @@ export default function DonateItemForm({
               window.location.href = `/campaigns/${campaign.attributes.slug}`;
             }, 2000);
           }
-
         }
-
       }
     } catch (e) {
       console.log("[Error] - Error creating donation instance");
       console.log("[Error] -", e);
     }
-  }
+  };
 
   return (
     <DialogContent>
@@ -209,13 +210,13 @@ export default function DonateItemForm({
         <DialogTitle>Confirm your donation</DialogTitle>
         <Carousel className="flex flex-col gap-4">
           <CarouselContent>
-            {/* Select Item to Donate */}
             <CarouselItem>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <p className="font-bold text-gray-600">Select Items to Donate</p>
+                  <p className="font-bold text-gray-600">
+                    Select Items to Donate
+                  </p>
                   <div className="flex flex-col gap-2 max-h-96 overflow-y-scroll scrollbar-hide">
-                    {/* Select Books */}
                     {requestedBooks?.map((book) => {
                       const isSelected = requestData.books?.some(
                         (b) => b.isbn === book.id
@@ -225,7 +226,8 @@ export default function DonateItemForm({
                         <label
                           key={book.id}
                           htmlFor={book.id}
-                          className="px-2 py-1 select-none hover:cursor-pointer">
+                          className="px-2 py-1 select-none hover:cursor-pointer"
+                        >
                           <div className="flex flex-row gap-4 items-center">
                             <input
                               type="checkbox"
@@ -235,7 +237,8 @@ export default function DonateItemForm({
                               onChange={(e) => {
                                 e.stopPropagation();
                                 toggleBookSelection(book, e.target.checked);
-                              }} />
+                              }}
+                            />
                             <div className="flex flex-row justify-between">
                               <div className="flex flex-col">
                                 <p>{book.attributes.title}</p>
@@ -247,10 +250,9 @@ export default function DonateItemForm({
                             </div>
                           </div>
                         </label>
-                      )
+                      );
                     })}
 
-                    {/* Select Supplies */}
                     {requestedSupplies?.map((item) => {
                       const isSelected = requestData.supplies?.some(
                         (i) => i.id === item.id
@@ -260,7 +262,8 @@ export default function DonateItemForm({
                         <label
                           key={item.id}
                           htmlFor={item.id}
-                          className="px-2 py-1 select-none hover:cursor-pointer">
+                          className="px-2 py-1 select-none hover:cursor-pointer"
+                        >
                           <div className="flex flex-row gap-4 items-center">
                             <input
                               type="checkbox"
@@ -270,7 +273,8 @@ export default function DonateItemForm({
                               onChange={(e) => {
                                 e.stopPropagation();
                                 toggleSupplySelection(item, e.target.checked);
-                              }} />
+                              }}
+                            />
                             <div className="flex flex-row justify-between">
                               <div className="flex flex-col">
                                 <p>{item.attributes.name}</p>
@@ -282,23 +286,24 @@ export default function DonateItemForm({
                             </div>
                           </div>
                         </label>
-                      )
+                      );
                     })}
                   </div>
                 </div>
               </div>
             </CarouselItem>
 
-            {/* Fill Form */}
             <CarouselItem>
               <div className="flex flex-col gap-4">
-                {/* username */}
-                {!user &&
+                {!user && (
                   <div className="flex flex-col">
                     <label
                       htmlFor="username"
-                      className="flex flex-col gap-2 text-gray-600">
-                      <span className="font-bold hover:cursor-pointer">Enter Your Username</span>
+                      className="flex flex-col gap-2 text-gray-600"
+                    >
+                      <span className="font-bold hover:cursor-pointer">
+                        Enter Your Username
+                      </span>
                       <input
                         type="text"
                         name="username"
@@ -306,47 +311,60 @@ export default function DonateItemForm({
                         className="border py-2 px-3 rounded-lg outline-none"
                         value={requestData.username}
                         placeholder="Kind Donor"
-                        onChange={(e) => setRequestData((prev) => ({ ...prev, username: e.target.value }))}
-                        disabled={!!user} />
+                        onChange={(e) =>
+                          setRequestData((prev) => ({
+                            ...prev,
+                            username: e.target.value,
+                          }))
+                        }
+                        disabled={!!user}
+                      />
                     </label>
                   </div>
-                }
+                )}
 
-                {/* package picture */}
                 <div className="flex flex-col">
                   <label
                     htmlFor="package-picture"
-                    className="flex flex-col gap-2 text-gray-600">
-                    <span className="font-bold hover:cursor-pointer">Upload Package Photo</span>
+                    className="flex flex-col gap-2 text-gray-600"
+                  >
+                    <span className="font-bold hover:cursor-pointer">
+                      Upload Package Photo
+                    </span>
                     <input
                       type="file"
                       name="package-picture"
                       id="package-picture"
                       accept="image/png, image/jpeg, image/jpg, image/heic, image/webp"
-                      onChange={(e) => { handleUploadImage(e) }}
+                      onChange={(e) => {
+                        handleUploadImage(e);
+                      }}
                       required
                     />
                   </label>
                 </div>
 
-                {/* delivery service */}
                 <div className="flex flex-col">
                   <label
                     htmlFor="delivery-service"
-                    className="flex flex-col gap-2 text-gray-600">
-                    <span className="font-bold hover:cursor-pointer">Delivery Service</span>
+                    className="flex flex-col gap-2 text-gray-600"
+                  >
+                    <span className="font-bold hover:cursor-pointer">
+                      Delivery Service
+                    </span>
                     <Select
                       value={requestData.delivery_service ?? ""}
                       onValueChange={(value) => {
                         setRequestData((prev) => ({
                           ...prev,
-                          delivery_service: value
+                          delivery_service: value,
                         }));
                         setErrorFields((prev) => ({
                           ...prev,
-                          deliveryService: false
+                          deliveryService: false,
                         }));
-                      }}>
+                      }}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Delivery Service" />
                       </SelectTrigger>
@@ -356,7 +374,9 @@ export default function DonateItemForm({
                         <SelectItem value="jne">JNE</SelectItem>
                         <SelectItem value="jnt">JNT</SelectItem>
                         <SelectItem value="lion_parcel">Lion Parcel</SelectItem>
-                        <SelectItem value="pos_indonesia">Pos Indonesia</SelectItem>
+                        <SelectItem value="pos_indonesia">
+                          Pos Indonesia
+                        </SelectItem>
                         <SelectItem value="sicepat">SiCepat</SelectItem>
                         <SelectItem value="spx_express">SPX Express</SelectItem>
                       </SelectContent>
@@ -364,12 +384,14 @@ export default function DonateItemForm({
                   </label>
                 </div>
 
-                {/* tracking number */}
                 <div className="flex flex-col">
                   <label
                     htmlFor="tracking-number"
-                    className="flex flex-col gap-2 text-gray-600">
-                    <span className="font-bold hover:cursor-pointer">Tracking Number</span>
+                    className="flex flex-col gap-2 text-gray-600"
+                  >
+                    <span className="font-bold hover:cursor-pointer">
+                      Tracking Number
+                    </span>
                     <input
                       type="text"
                       name="tracking-number"
@@ -380,13 +402,14 @@ export default function DonateItemForm({
                       onChange={(e) => {
                         setRequestData((prev) => ({
                           ...prev,
-                          resi: e.target.value
+                          resi: e.target.value,
                         }));
                         setErrorFields((prev) => ({
                           ...prev,
-                          trackingNumber: false
+                          trackingNumber: false,
                         }));
-                      }} />
+                      }}
+                    />
                   </label>
                 </div>
               </div>
@@ -397,44 +420,50 @@ export default function DonateItemForm({
             <CarouselPrevious
               size={"default"}
               className="!px-4 !py-2 capitalize"
-              onClick={() => setSlidePage(slidePage - 1)}>
+              onClick={() => setSlidePage(slidePage - 1)}
+            >
               back
             </CarouselPrevious>
 
-            {
-              ((requestData.books ?? []).length > 0 || (requestData.supplies ?? []).length > 0) && slidePage === 0 &&
-              <CarouselNext
-                size={"default"}
-                className="!px-4 !py-2 capitalize"
-                onClick={() => setSlidePage(slidePage + 1)}>
-                continue
-              </CarouselNext>
-            }
-
-            {
-              slidePage === 1 && (
-                <button
-                  className={`px-4 py-2 text-sm h-full rounded font-semibold transition-colors duration-100
-                  ${(errorFields.deliveryService || errorFields.packagePicture || errorFields.trackingNumber)
-                      ? "text-gray-600 bg-slate-300 cursor-not-allowed"
-                      : "text-white bg-pink-500 cursor-pointer active:bg-pink-600"}`}
-                  disabled={
-                    !(
-                      (requestData.books ?? []).length > 0 ||
-                      (requestData.supplies ?? []).length > 0
-                    ) || (
-                      errorFields.deliveryService || errorFields.packagePicture || errorFields.trackingNumber
-                    )
-                  }
-                  onClick={() => handleSubmitDonation()}
+            {((requestData.books ?? []).length > 0 ||
+              (requestData.supplies ?? []).length > 0) &&
+              slidePage === 0 && (
+                <CarouselNext
+                  size={"default"}
+                  className="!px-4 !py-2 capitalize"
+                  onClick={() => setSlidePage(slidePage + 1)}
                 >
-                  Confirm
-                </button>
-              )
-            }
+                  continue
+                </CarouselNext>
+              )}
+
+            {slidePage === 1 && (
+              <button
+                className={`px-4 py-2 text-sm h-full rounded font-semibold transition-colors duration-100
+                  ${
+                    errorFields.deliveryService ||
+                    errorFields.packagePicture ||
+                    errorFields.trackingNumber
+                      ? "text-gray-600 bg-slate-300 cursor-not-allowed"
+                      : "text-white bg-pink-500 cursor-pointer active:bg-pink-600"
+                  }`}
+                disabled={
+                  !(
+                    (requestData.books ?? []).length > 0 ||
+                    (requestData.supplies ?? []).length > 0
+                  ) ||
+                  errorFields.deliveryService ||
+                  errorFields.packagePicture ||
+                  errorFields.trackingNumber
+                }
+                onClick={() => handleSubmitDonation()}
+              >
+                Confirm
+              </button>
+            )}
           </div>
         </Carousel>
       </DialogHeader>
     </DialogContent>
-  )
+  );
 }

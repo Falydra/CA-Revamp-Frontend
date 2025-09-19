@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/Components/ui/button";
 import {
@@ -15,12 +14,10 @@ import { Link } from "react-router-dom";
 
 import initiator_data, { type InitiatorData } from "@/config/initiator_data";
 
-
 import { Input } from "./ui/input";
 import { IoDocumentTextOutline } from "react-icons/io5";
 import nominal_donasi, { type NominalDonasi } from "@/config/nominal_donasi";
 import type { Campaign } from "@/types";
-
 
 interface TestUser {
   id: number;
@@ -44,10 +41,7 @@ interface CardWithFormProps {
   campaign: Campaign | null;
 }
 
-
-export function BookCharityCard({
-  campaign
-}: CardWithFormProps) {
+export function BookCharityCard({ campaign }: CardWithFormProps) {
   // const [bookDonations, setBookDonations] = useState<DonationData[]>([]);
   // const [loading, setLoading] = useState(true);
   const [isModalEnableCharity, setIsModalEnableCharity] = useState(false);
@@ -89,7 +83,9 @@ export function BookCharityCard({
   const attr = campaign.attributes;
   const title = attr.title ? attr.title : "Campaign";
   const description = attr.description ? attr.description : "";
-  const headerImage = attr.header_image_url ? attr.header_image_url : "/images/Charity1.jpeg";
+  const headerImage = attr.header_image_url
+    ? attr.header_image_url
+    : "/images/Charity1.jpeg";
 
   const words = description ? description.split(" ") : [];
   const limited = words.slice(0, 75).join(" ");
@@ -110,7 +106,12 @@ export function BookCharityCard({
 
             <CardFooter className="flex w-full justify-end h-full flex-col">
               <div className="w-full flex flex-col gap-2 items-start justify-end h-full">
-                <p>Terkumpul <span className="text-primary-bg font-bold">{attr.donated_item_quantity} Barang</span></p>
+                <p>
+                  Terkumpul{" "}
+                  <span className="text-primary-bg font-bold">
+                    {attr.donated_item_quantity} Barang
+                  </span>
+                </p>
 
                 <ProgressBar
                   className="w-full"
@@ -138,14 +139,14 @@ export function BookCharityCard({
               alt={title}
               className="w-full h-full object-cover rounded-r-xl"
               onError={(e) => {
-                e.currentTarget.src = "https://via.placeholder.com/400x300?text=Campaign+Image";
+                e.currentTarget.src =
+                  "https://via.placeholder.com/400x300?text=Campaign+Image";
               }}
             />
           </div>
         </div>
       </Card>
 
-      {/* Modal */}
       {isModalEnableCharity && (
         <div className="fixed z-50 inset-0 bg-black bg-opacity-50 flex text-primary-bg items-center justify-center">
           <div className="bg-white w-1/3 h-5/6 rounded-xl flex flex-col">
@@ -248,7 +249,6 @@ export function BookCharityCard({
         </div>
       )}
 
-      {/* Detail */}
       {isDetail && (
         <CharityDetail isDetail={isDetail} setIsDetail={setIsDetail} />
       )}

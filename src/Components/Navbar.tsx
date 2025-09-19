@@ -47,7 +47,7 @@ export default function Navbar() {
     } else if (roles.includes("admin")) {
       return "/dashboard/admin";
     } else if (roles.includes("organizer")) {
-      return "/dashboard/donee";
+      return "/dashboard/organizer";
     } else if (roles.includes("donor")) {
       return "/dashboard/donor";
     } else {

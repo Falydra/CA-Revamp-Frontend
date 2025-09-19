@@ -75,7 +75,7 @@ export function CardWithForm({ campaign }: CardWithFormProps) {
                     {formatPrice(attr.requested_fund_amount)}
                   </h2>
                 </div>
-              </div>
+              </div>  
 
               <Link
                 className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"

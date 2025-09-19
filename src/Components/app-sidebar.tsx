@@ -26,7 +26,7 @@ import {
 
 import {
   DonorPage,
-  DoneePage,
+  OrganizerPage,
   AdminPage,
   SuperAdminPage,
   type MenuItem as ConfigMenuItem,
@@ -82,7 +82,7 @@ function getGroupsForRole(roles: string[]): SidebarGroupConfig[] {
   } else if (roles.includes("admin")) {
     return [{ label: "Menu", items: AdminPage.mainPage.items }];
   } else if (roles.includes("organizer")) {
-    return [{ label: "Menu", items: DoneePage.mainPage.items }];
+    return [{ label: "Menu", items: OrganizerPage.mainPage.items }];
   } else if (roles.includes("donor")) {
     const mainItems = DonorPage.mainPage.items ?? [];
     const profileItems = (DonorPage.mainPage as any).profileItems ?? [];
@@ -92,7 +92,6 @@ function getGroupsForRole(roles: string[]): SidebarGroupConfig[] {
     return groups;
   } 
 
-  // default
   return [
     {
       label: "Menu",
