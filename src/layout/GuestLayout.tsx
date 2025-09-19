@@ -31,7 +31,7 @@ export default function Guest({ children }: PropsWithChildren) {
   );
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-indigo-50 via-white to-blue-100">
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-indigo-50 overflow-hidden via-white to-blue-100">
       <Navbar />
       <div className="w-full overflow-hidden">
         {bubbles.map((b) => (

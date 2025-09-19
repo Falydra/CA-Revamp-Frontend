@@ -27,7 +27,7 @@ import { Button } from "@/Components/ui/button";
 import { IoIosLogOut } from "react-icons/io";
 import { FaHome } from "react-icons/fa";
 import { apiService } from "@/services/api";
-import { DonorPage, DoneePage, AdminPage, SuperAdminPage } from "@/config/page_data";
+import { DonorPage, OrganizerPage, AdminPage, SuperAdminPage } from "@/config/page_data";
 import { IoPersonOutline } from "react-icons/io5";
 
 interface User {
@@ -128,7 +128,7 @@ export default function Authenticated({
         } else if (roles.includes("admin")) {
             return AdminPage.mainPage.items;
         } else if (roles.includes("organizer")) {
-            return DoneePage.mainPage.items;
+            return OrganizerPage.mainPage.items;
         } else if (roles.includes("donor")) {
             return DonorPage.mainPage.items;
         }
@@ -150,7 +150,7 @@ export default function Authenticated({
         } else if (roles.includes("admin")) {
             return "/dashboard/admin";
         } else if (roles.includes("organizer")) {
-            return "/dashboard/donee";
+            return "/dashboard/organizer";
         } else if (roles.includes("donor")) {
             return "/dashboard/donor";
         } else {
