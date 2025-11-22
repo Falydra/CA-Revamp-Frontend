@@ -69,7 +69,7 @@ export default function CampaignPage() {
         <h1 className="text-2xl font-bold px-8">Campaigns</h1>
 
         <div className="w-full p-8">
-          <div className="grid-cols-4 grid justify-around gap-6 items-start w-full">
+          <div className="grid-cols-3 grid justify-around gap-6 items-start w-full">
             {campaigns.length > 0 ? (
               campaigns.map((campaign: Campaign) => {
                 return (

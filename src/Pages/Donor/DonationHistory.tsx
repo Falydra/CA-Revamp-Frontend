@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import DonorLayout from "@/Layout/AuthenticatedLayout";
 import { apiService } from "@/services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
-import type { Campaign } from "@/types";
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export default function DonationHistory() {
-  const [donations, setDonations] = useState<Campaign[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -82,10 +81,11 @@ export default function DonationHistory() {
       </DonorLayout>
     );
   }
+  console.log("Donations: ", donations);
 
   return (
     <DonorLayout>
-      <div className="p-4">
+      <div className="p-4 w-full">
         <div className="flex items-center justify-between gap-8 py-2">
           <h1 className="text-2xl font-bold">Donation History</h1>
           <Button onClick={() => fetchDonations(currentPage)} variant="outline">
@@ -118,29 +118,27 @@ export default function DonationHistory() {
         )}
 
         {!error && donations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Donations</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div>
+            
+            <div>
               <div className="space-y-4">
                 {donations.map((donation, index) => (
                   <div
                     key={index}
-                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className=" border rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-medium">
-                            {donation.attributes.title || "Campaign"}
+                            {(donation as any).relationships?.campaign?.attributes?.title || "Campaign"}
                           </h3>
                           <Badge
                             className={getStatusColor(
-                              donation.attributes.status
+                              (donation as any).attributes?.status
                             )}
                           >
-                            {donation.attributes.status || "pending"}
+                            {(donation as any).attributes?.status || "pending"}
                           </Badge>
                         </div>
 
@@ -154,7 +152,9 @@ export default function DonationHistory() {
                             <p className="text-lg font-bold text-green-600">
                               Rp{" "}
                               {formatPrice(
-                                donation.attributes.donated_fund_amount || 0
+                                typeof (donation as any).attributes?.amount === 'string' 
+                                  ? parseInt((donation as any).attributes.amount, 10) 
+                                  : ((donation as any).attributes?.amount || 0)
                               )}
                             </p>
                           </div>
@@ -175,14 +175,12 @@ export default function DonationHistory() {
                           </div>
                         </div>
 
-                        {donation.attributes.description && (
-                          <div className="mt-2">
-                            <span className="font-medium text-sm">Notes:</span>
-                            <p className="text-sm text-muted-foreground">
-                              {donation.attributes.description}
-                            </p>
-                          </div>
-                        )}
+                        <div className="mt-2">
+                          <span className="font-medium text-sm">Type:</span>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {(donation as any).attributes?.type === 'fund' ? 'Fund Donation' : 'Item Donation'}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
@@ -191,7 +189,7 @@ export default function DonationHistory() {
                             size="sm"
                             variant="outline"
                             onClick={() =>
-                              (window.location.href = `/campaigns/${donation.id}`)
+                              (window.location.href = `/campaigns/${(donation as any).relationships?.campaign?.attributes?.slug}`)
                             }
                           >
                             View Campaign
@@ -228,8 +226,8 @@ export default function DonationHistory() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
     </DonorLayout>

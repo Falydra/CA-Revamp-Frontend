@@ -31,10 +31,10 @@ export default function Guest({ children }: PropsWithChildren) {
   );
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-indigo-50 overflow-hidden via-white to-blue-100">
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-indigo-50 overflow-x-hidden via-white to-blue-100">
       <Navbar />
-      <div className="w-full overflow-hidden">
-        {bubbles.map((b) => (
+      <div className="w-full overflow-x-hidden">
+        {/* {bubbles.map((b) => (
           <div
             key={b.key}
             style={{
@@ -45,11 +45,11 @@ export default function Guest({ children }: PropsWithChildren) {
               opacity: b.opacity,
               filter: `blur(${b.blur}px)`,
             }}
-            className={`absolute rounded-full ${b.color} pointer-events-none -z-[1]`}
+            className={`absolute rounded-full ${b.color} pointer-events-none z-1`}
           />
-        ))}
+        ))} */}
       </div>
-      <div className="flex-grow min-h-screen w-full items-center justify-center pt-[60px]">
+      <div className="flex-grow min-h-screen w-full items-center justify-center pt-[60px] Z-100">
         {children}
       </div>
       <Toaster />

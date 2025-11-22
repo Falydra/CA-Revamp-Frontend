@@ -75,7 +75,7 @@ function getIconForItem(item: ConfigMenuItem): LucideIcon {
 }
 
 function getGroupsForRole(roles: string[]): SidebarGroupConfig[] {
-  console.log("Role sidebar: ", roles, typeof (roles));
+  
 
   if (roles.includes("superadmin")) {
     return [{ label: "Menu", items: SuperAdminPage.mainPage.items }];
@@ -190,7 +190,7 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
           .filter((g) => (g.items?.length ?? 0) > 0)
           .map((group, gi) => (
             <SidebarGroup key={`${group.label}-${gi}`}>
-              <SidebarGroupLabel className="text-primary-accent font-bold text-lg rounded-none">
+              <SidebarGroupLabel className="text-primary-bg font-bold text-lg rounded-none">
                 {group.label === "Menu" ? "CA Revamp" : group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -204,7 +204,7 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
                         <SidebarMenuButton
                           onClick={() => handleItemClick(item.url)}
                           className={`cursor-pointer ${isActive
-                            ? "bg-primary-accent text-white hover:bg-primary-accent/80"
+                            ? "bg-primary-bg text-white hover:bg-primary-bg hover:text-white "
                             : "hover:bg-primary-accent/10"
                             }`}
                         >

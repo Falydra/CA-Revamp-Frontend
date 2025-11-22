@@ -22,7 +22,7 @@ export const apiService = {
   }) => {
     try {
       console.log("Getting CSRF cookie...");
-      await axios.get("http://localhost:8000/sanctum/csrf-cookie", {
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
         withCredentials: true,
       });
       console.log("CSRF cookie obtained successfully");
@@ -56,7 +56,7 @@ export const apiService = {
 
   login: async ({ email, password }: { email: string; password: string }) => {
     try {
-      await axios.get("http://localhost:8000/sanctum/csrf-cookie", {
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
         withCredentials: true,
       });
 
@@ -115,7 +115,7 @@ export const apiService = {
     localStorage.removeItem("roles");
   },
 
-  getCampaigns: async (params: { type?: string; search?: string }) => {
+    getCampaigns: async (params: { type?: string; search?: string }) => {
     try {
       const response = await api.get("/campaigns", {
         params: {
@@ -130,6 +130,25 @@ export const apiService = {
     }
   },
 
+    // Organizer-specific campaigns (includes pending/rejected for that organizer)
+    getOrganizerCampaigns: async (params: { page?: number; per_page?: number; type?: string; status?: string; search?: string } = {}) => {
+      try {
+        const response = await api.get('/organizer/campaigns', {
+          params: {
+            page: params.page || 1,
+            per_page: params.per_page || 10,
+            type: params.type || undefined,
+            status: params.status || undefined,
+            search: params.search || undefined,
+          }
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Get organizer campaigns error:', error);
+        throw error;
+      }
+    },
+
   getCampaign: async (id: string) => {
     try {
       const response = await api.get(`/campaigns/${id}`);
@@ -143,14 +162,33 @@ export const apiService = {
 
   createCampaign: async (campaignData: FormData) => {
     try {
+      // Ensure Sanctum CSRF cookie is present for session-based requests
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Read XSRF token from cookie and attach as header
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+      // Do not manually set Content-Type for FormData - let the browser set boundary
       const response = await api.post("/campaigns", campaignData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers,
+        withCredentials: true,
       });
       return response.data;
     } catch (error) {
-      console.error("Create campaign error:", error);
+      // Log detailed server response when available to help debugging validation errors
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Create campaign error response:", error.response.data);
+      } else {
+        console.error("Create campaign error:", error);
+      }
       throw error;
     }
   },
@@ -324,11 +362,97 @@ export const apiService = {
       }
     },
 
-  approveOrganizerApplication: (id: string) =>
-    api.post(`/admin/organizer-applications/${id}/approve`),
+  approveOrganizerApplication: async (id: string) => {
+    const url = "http://localhost:8000/api/v1/sanctum/csrf-cookie";
+    try {
+      // Ensure Sanctum CSRF cookie is present
+      await axios.get(url, { withCredentials: true });
 
-  rejectOrganizerApplication: (id: string, reason?: string) =>
-    api.post(`/admin/organizer-applications/${id}/reject`, { reason }),
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+      const response = await api.post(
+        `/admin/applications/review`,
+        { id, status: "accepted" },
+        { headers, withCredentials: true }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Approve organizer application error:", error);
+      // If 419 (CSRF), try once more after fetching csrf cookie
+      if (error?.response?.status === 419) {
+        try {
+          await axios.get(url, { withCredentials: true });
+          const csrfToken = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("XSRF-TOKEN="))
+            ?.split("=")[1];
+          const headers: Record<string, string> = {};
+          if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+          const retry = await api.post(
+            `/admin/applications/review`,
+            { id, status: "accepted" },
+            { headers, withCredentials: true }
+          );
+          return retry.data;
+        } catch (err) {
+          console.error("Retry approve failed:", err);
+          throw err;
+        }
+      }
+      throw error;
+    }
+  },
+
+  rejectOrganizerApplication: async (id: string, reason?: string) => {
+    const url = "http://localhost:8000/api/v1/sanctum/csrf-cookie";
+    try {
+      await axios.get(url, { withCredentials: true });
+
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+      const response = await api.post(
+        `/admin/applications/review`,
+        { id, status: "rejected", message: reason || null },
+        { headers, withCredentials: true }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Reject organizer application error:", error);
+      if (error?.response?.status === 419) {
+        try {
+          await axios.get(url, { withCredentials: true });
+          const csrfToken = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("XSRF-TOKEN="))
+            ?.split("=")[1];
+          const headers: Record<string, string> = {};
+          if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+          const retry = await api.post(
+            `/admin/applications/review`,
+            { id, status: "rejected", message: reason || null },
+            { headers, withCredentials: true }
+          );
+          return retry.data;
+        } catch (err) {
+          console.error("Retry reject failed:", err);
+          throw err;
+        }
+      }
+      throw error;
+    }
+  },
 
   getRequestedSupplies: (campaignId: string) =>
     api.get(`/campaigns/${campaignId}/requested-supplies`),
@@ -338,15 +462,32 @@ export const apiService = {
 
   createDonation: async (campaignId: string, donationData: FormData) => {
     try {
+      // Ensure Sanctum CSRF cookie is present for session-based requests
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Read XSRF token from cookie and attach as header
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) {
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+      }
+
+      // Do not manually set Content-Type for FormData - let the browser set boundary
       const response = await api.post(
         `/campaigns/${campaignId}/donations`,
         donationData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers,
+          withCredentials: true,
         }
       );
+
       return response.data;
     } catch (error) {
       console.error("Create Donation Error: ", error);
@@ -390,21 +531,135 @@ export const apiService = {
   },
 
   createIdentity: async (data: FormData) => {
-    const response = await api.post('/identity', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    try {
+      // Get CSRF cookie
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Get CSRF token
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) {
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+      }
+
+      const response = await api.post('/identity', data, {
+        headers,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Create Identity Error: ", error);
+      throw error;
+    }
   },
 
   updateIdentity: async (data: FormData) => {
-    const response = await api.put('/identity', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    try {
+      // Get CSRF cookie
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Get CSRF token
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) {
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+      }
+
+      const response = await api.put('/identity', data, {
+        headers,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Update Identity Error: ", error);
+      throw error;
+    }
+  },
+
+  getOrganizerApplication: async () => {
+    try {
+      const response = await api.get('/application');
+      return response.data;
+    } catch (error) {
+      console.error("Get Organizer Application Error: ", error);
+      throw error;
+    }
+  },
+
+  createOrganizerApplication: async () => {
+    try {
+      // Get CSRF cookie
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Get CSRF token
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+      }
+
+      const response = await api.post('/application', {}, {
+        headers,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Create Organizer Application Error: ", error);
+      throw error;
+    }
+  },
+
+  reapplyOrganizerApplication: async () => {
+    try {
+      // Get CSRF cookie
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      // Get CSRF token
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+      }
+
+      const response = await api.post('/application/reapply', {}, {
+        headers,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Reapply Organizer Application Error: ", error);
+      throw error;
+    }
   },
 
 
@@ -444,17 +699,31 @@ export const apiService = {
 
     updateCampaignStatus: async (
       campaignId: string,
-      status: string,
-      notes?: string
+      status: string
     ) => {
       try {
-        const response = await api.put(
-          `/admin/campaigns/${campaignId}/status`,
-          {
-            status,
-            notes,
-          }
-        );
+        // Ensure Sanctum CSRF cookie is present for stateful admin actions
+        await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+          withCredentials: true,
+        });
+
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+        // The backend expects a review action with _action='review' and status 'accepted' or 'rejected'
+        const payload: any = { _action: "review", status };
+
+        // Use identifier-based admin review endpoint that accepts campaign_id or slug
+        const response = await api.put(`/admin/campaigns/by-identifier/${campaignId}`, payload, {
+          headers,
+          withCredentials: true,
+        });
+
         return response.data;
       } catch (error) {
         console.error("Update campaign status error:", error);
@@ -474,7 +743,7 @@ export const apiService = {
 
     getOrganizerApplications: async (page = 1, per_page = 10) => {
       try {
-        const response = await api.get("/admin/organizer-applications", {
+        const response = await api.get("/admin/applications", {
           params: { page, per_page },
         });
         return response.data;
@@ -522,6 +791,23 @@ export const apiService = {
         return response.data;
       } catch (error) {
         console.error("Get donations error:", error);
+        throw error;
+      }
+    },
+    getCampaigns: async (params: { page?: number; per_page?: number; type?: string; status?: string; search?: string } = {}) => {
+      try {
+        const response = await api.get('/admin/campaigns', {
+          params: {
+            page: params.page || 1,
+            per_page: params.per_page || 10,
+            type: params.type || undefined,
+            status: params.status || undefined,
+            search: params.search || undefined,
+          }
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Get admin campaigns error:', error);
         throw error;
       }
     },

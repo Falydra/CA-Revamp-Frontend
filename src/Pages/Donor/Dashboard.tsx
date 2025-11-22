@@ -55,10 +55,15 @@ export default function DonorDashboard() {
           const totalDonations = donationList.length;
           const totalAmount = donationList.reduce(
             (sum: number, donation: any) => {
-              return sum + (donation.amount || 0);
+           
+              const amount = donation.attributes?.amount || donation.amount || 0;
+             
+              const numericAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
+              return sum + (numericAmount || 0);
             },
             0
           );
+          
 
           setStats({
             totalDonations,
@@ -83,6 +88,7 @@ export default function DonorDashboard() {
     loadDashboardData();
   }, []);
 
+
   if (loading) {
     return (
       <DonorLayout>
@@ -92,6 +98,8 @@ export default function DonorDashboard() {
       </DonorLayout>
     );
   }
+
+  console.log("Donations:", stats.totalAmount);
 
   return (
     <DonorLayout>
@@ -182,10 +190,14 @@ export default function DonorDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        Rp {formatPrice(donation.amount || 0)}
+                        Rp {formatPrice(
+                          typeof (donation.attributes?.amount || donation.amount) === 'string' 
+                            ? parseInt(donation.attributes?.amount || donation.amount, 10) 
+                            : (donation.attributes?.amount || donation.amount || 0)
+                        )}
                       </p>
                       <p className="text-sm text-muted-foreground capitalize">
-                        {donation.status || "pending"}
+                        {donation.attributes?.status || donation.status || "pending"}
                       </p>
                     </div>
                   </div>

@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-scroll";
-import { Link as RouterLink } from "react-router-dom"
 import { CardWithForm } from "@/Components/CharityCard";
 import { BookCharityCard } from "@/Components/BookDonationCard";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Campaign } from "@/types";
 import { apiService } from "@/services/api";
-import ProgressBar from "./ui/progress-bar";
 import CampaignCard from "./CampaignCard";
 import CampaignCardSkeleton from "./CampaignCardSkeleton";
 
@@ -17,7 +15,7 @@ export default function Charity() {
   const [productCampaigns, setProductCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const charityToggle = isMoney ? "charity" : "book";
+
 
   const fetchFundraiser = async () => {
     try {
@@ -156,7 +154,7 @@ export default function Charity() {
               Array.from({ length: 3 }).map((arr, i) => <CampaignCardSkeleton key={i} />)
             ) : (
               (fundraisers.length > 0 ? (
-                fundraisers.map((campaign: Campaign) => {
+                fundraisers.slice(0, 3).map((campaign: Campaign) => {
                   return <CampaignCard
                     campaign={campaign}
                     minWidth="80"

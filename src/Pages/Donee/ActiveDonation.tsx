@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DoneeLayout from "@/Layout/AuthenticatedLayout";
 import { apiService } from "@/services/api";
 import type { Campaign } from "@/types";
@@ -18,18 +18,29 @@ export default function ActiveDonation() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const navigate = useNavigate();
+
+  const getCampaignStatus = (campaign: any) =>
+    campaign?.attributes?.status ?? campaign?.status ?? "pending";
 
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getCampaigns({});
+        // Use organizer-specific endpoint so user only sees their own campaigns
+        const response = await apiService.getOrganizerCampaigns({ page: 1, per_page: 100 });
 
-        const campaignList = Array.isArray(response?.data?.data)
-          ? response.data.data
-          : Array.isArray(response?.data)
-          ? response.data
-          : [];
+        // apiService.getOrganizerCampaigns returns axios response.data where
+        // the paginated resource array is available as `.data`.
+        // Normalize the result to an array of campaign objects.
+        let campaignList: any[] = [];
+        if (Array.isArray(response?.data)) {
+          campaignList = response.data;
+        } else if (Array.isArray(response?.data?.data)) {
+          campaignList = response.data.data;
+        } else if (Array.isArray(response)) {
+          campaignList = response;
+        }
 
         setCampaigns(campaignList);
         setFilteredCampaigns(campaignList);
@@ -72,6 +83,32 @@ export default function ActiveDonation() {
     setFilteredCampaigns(filtered);
   }, [searchTerm, statusFilter, campaigns]);
 
+  const handleDelete = async (campaignId: string) => {
+    if (!confirm("Are you sure you want to delete this campaign?")) return;
+    try {
+      await apiService.deleteCampaign(campaignId);
+      // refresh
+      const resp = await apiService.getOrganizerCampaigns({ page: 1, per_page: 100 });
+      const list = Array.isArray(resp?.data?.data)
+        ? resp.data.data
+        : Array.isArray(resp?.data)
+        ? resp.data
+        : Array.isArray(resp)
+        ? resp
+        : [];
+      setCampaigns(list);
+      setFilteredCampaigns(list);
+    } catch (err) {
+      console.error("Failed to delete campaign:", err);
+      alert("Failed to delete campaign");
+    }
+  };
+
+  const handleEdit = (campaign: any) => {
+    // navigate to organizer edit page - adjust route if different
+    navigate(`/dashboard/donee/edit-donation/${campaign.id}`);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "on_progress":
@@ -99,7 +136,7 @@ export default function ActiveDonation() {
 
   return (
     <DoneeLayout>
-      <div className="space-y-6 p-4">
+      <div className="space-y-6 p-4 w-full">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Your Donation Campaigns</h1>
@@ -184,174 +221,69 @@ export default function ActiveDonation() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredCampaigns.map((campaign) => {
-              const campaignData = campaign.attributes || campaign;
-              const organizerName =
-                campaign.relationships?.organizer?.attributes?.name ||
-                campaign.relationships?.organizer?.attributes.name ||
-                "Anonymous";
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Campaigns</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm table-auto">
+                  <thead>
+                    <tr className="text-left border-b">
+                      <th className="p-2">#</th>
+                      <th className="p-2">Title</th>
+                      <th className="p-2">Type</th>
+                      <th className="p-2">Status</th>
+                      <th className="p-2">Progress</th>
+                      <th className="p-2">Created</th>
+                      <th className="p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCampaigns.map((campaign, idx) => {
+                      const campaignData = campaign.attributes || campaign;
+                      const status = getCampaignStatus(campaign);
+                      const progress = campaignData.requested_fund_amount > 0
+                        ? Math.round((campaignData.donated_fund_amount / campaignData.requested_fund_amount) * 100)
+                        : campaignData.requested_item_quantity > 0
+                        ? Math.round((campaignData.donated_item_quantity / campaignData.requested_item_quantity) * 100)
+                        : 0;
 
-              return (
-                <Card
-                  key={campaign.id}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={
-                        campaignData.header_image_url || "/images/Charity1.jpeg"
-                      }
-                      alt={campaignData.title || "Campaign"}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/Charity1.jpeg";
-                      }}
-                    />
-                    <div className="absolute top-2 right-2">
-                      <Badge
-                        className={getStatusColor(
-                          campaignData.status || "pending"
-                        )}
-                      >
-                        {campaignData.status || "pending"}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2">
-                      {campaignData.title || "Untitled Campaign"}
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {campaignData.description || "No description available"}
-                    </p>
-
-                    {campaign.type === "fundraiser" ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span>
-                            {campaignData.requested_fund_amount > 0
-                              ? Math.round(
-                                  (campaignData.donated_fund_amount /
-                                    campaignData.requested_fund_amount) *
-                                    100
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                campaignData.requested_fund_amount > 0
-                                  ? Math.min(
-                                      (campaignData.donated_fund_amount /
-                                        campaignData.requested_fund_amount) *
-                                        100,
-                                      100
-                                    )
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>
-                            Rp{" "}
-                            {formatPrice(campaignData.donated_fund_amount || 0)}
-                          </span>
-                          <span>
-                            Rp{" "}
-                            {formatPrice(
-                              campaignData.requested_fund_amount || 0
+                      return (
+                        <tr key={campaign.id} className="border-b">
+                          <td className="p-2 align-top">{idx + 1}</td>
+                          <td className="p-2 align-top">
+                            <div className="font-medium">{campaignData.title}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{campaignData.description}</div>
+                          </td>
+                          <td className="p-2 align-top">{campaignData.campaign_type}</td>
+                          <td className="p-2 align-top">
+                            <Badge className={getStatusColor(status)}>{status}</Badge>
+                          </td>
+                          <td className="p-2 align-top">{progress}%</td>
+                          <td className="p-2 align-top">
+                            <div>{campaignData.created_at}</div>
+                            {campaignData.campaign_type === 'fundraiser' ? (
+                              <div className="text-xs text-muted-foreground">Rp {formatPrice(campaignData.requested_fund_amount || 0)}</div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground">{campaignData.requested_item_quantity || 0} items</div>
                             )}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Items Collected</span>
-                          <span>
-                            {campaignData.requested_item_quantity > 0
-                              ? Math.round(
-                                  (campaignData.donated_item_quantity /
-                                    campaignData.requested_item_quantity) *
-                                    100
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                campaignData.requested_item_quantity > 0
-                                  ? Math.min(
-                                      (campaignData.donated_item_quantity /
-                                        campaignData.requested_item_quantity) *
-                                        100,
-                                      100
-                                    )
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>
-                            {campaignData.donated_item_quantity || 0} items
-                          </span>
-                          <span>
-                            {campaignData.requested_item_quantity || 0} needed
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 text-sm">
-                      <img
-                        src="https://cdn-icons-png.flaticon.com/128/3408/3408590.png"
-                        className="w-6 h-6 rounded-full"
-                        alt="Organizer"
-                      />
-                      <span className="text-muted-foreground">
-                        by {organizerName}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/campaigns/${campaignData.slug || campaign.id}`}
-                        className="flex-1"
-                      >
-                        <Button variant="outline" className="w-full">
-                          View Details
-                        </Button>
-                      </Link>
-                      {campaignData.status === "on_progress" && (
-                        <Link
-                          to={`/dashboard/donee/edit-donation/${campaign.id}`}
-                          className="flex-1"
-                        >
-                          <Button className="w-full">Edit Campaign</Button>
-                        </Link>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                          </td>
+                          <td className="p-2 align-top space-x-2">
+                            <Link to={`/campaigns/${campaignData.slug || campaign.id}`}>
+                              <Button variant="ghost" size="sm">View</Button>
+                            </Link>
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)}>Edit</Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDelete(campaign.id)}>Delete</Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </DoneeLayout>

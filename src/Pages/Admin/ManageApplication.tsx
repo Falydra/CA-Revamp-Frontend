@@ -16,10 +16,9 @@ import { toast } from "sonner";
 import { Search, Eye, Check, X, Loader2 } from "lucide-react";
 
 export default function ManageApplication() {
-  const [applications, setApplications] = useState<OrganizerApplication[]>([]);
-  const [filteredApplications, setFilteredApplications] = useState<
-    OrganizerApplication[]
-  >([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<any[]>(
+  []);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -27,27 +26,60 @@ export default function ManageApplication() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [selectedApplication, setSelectedApplication] =
-    useState<OrganizerApplication | null>(null);
+    useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingAction, setProcessingAction] = useState(false);
 
   const fetchApplications = async (page: number = 1) => {
     try {
       setLoading(true);
-      const response = await apiService.getOrganizerApplications(page, 10);
+      // admin endpoint returns paginated data in response.data when called via axios,
+      // but apiService methods return response.data already. Use admin.getOrganizerApplications
+      // and handle both shapes (raw axios response or already-extracted data).
+      const response = await apiService.admin.getOrganizerApplications(page, 10);
 
-      if (response.data) {
-        const applicationList = Array.isArray(response.data.data)
-          ? response.data.data
-          : Array.isArray(response.data)
-          ? response.data
-          : [];
+      // response might already be the data object (because apiService returns response.data),
+      // or it might be the full axios response if other callers change. Normalize to `payload`.
+      const payload = response && (response.data ?? response) ? (response.data ?? response) : response;
 
-        setApplications(applicationList);
-        setFilteredApplications(applicationList);
-        setTotalPages(response.data.last_page || 1);
-        setCurrentPage(response.data.current_page || 1);
-      }
+      // Normalize backend resources to the UI-friendly shape
+      const raw = Array.isArray(payload.data)
+        ? payload.data
+        : Array.isArray(payload)
+        ? payload
+        : [];
+
+        const normalized: OrganizerApplication[] = raw.map((item: any) => {
+          const attr = item.attributes || {};
+          const owner = item.relationships?.owner?.attributes || {};
+          const identity = item.relationships?.applicant_identity || {};
+
+          // Map backend status 'accepted' -> 'approved' for UI
+          const status: 'pending' | 'approved' | 'rejected' =
+            attr.status === 'accepted' ? 'approved' : (attr.status as any);
+
+          return {
+            organizer_application_id: item.id,
+            user_id: item.relationships?.owner?.id || '',
+            status,
+            reviewed_at: attr.reviewed_at || null,
+            created_at: attr.created_at || null,
+            updated_at: attr.updated_at || null,
+            user: { email: owner.email || '', name: owner.name || '' } as any,
+            // convenience fields for UI display
+            full_name: identity.full_name || owner.name || '',
+            nik: identity.nik || '',
+            phone_number: identity.phone_number || '',
+            gender: identity.gender || '',
+            date_of_birth: identity.date_of_birth || '',
+            id_card_image: identity.id_card_image_url || '',
+          } as any;
+        });
+
+        setApplications(normalized);
+        setFilteredApplications(normalized);
+        setTotalPages(payload.last_page || 1);
+        setCurrentPage(payload.current_page || 1);
     } catch (error) {
       console.error("Error fetching applications:", error);
       toast.error("Failed to load applications");
@@ -82,7 +114,7 @@ export default function ManageApplication() {
     setFilteredApplications(filtered);
   }, [searchTerm, statusFilter, applications]);
 
-  const handleViewApplication = (application: OrganizerApplication) => {
+  const handleViewApplication = (application: any) => {
     setSelectedApplication(application);
     setIsModalOpen(true);
   };
@@ -105,7 +137,7 @@ export default function ManageApplication() {
         );
       }
 
-      if (response.data?.success !== false) {
+      if (response?.success !== false) {
         toast.success(`Application ${status} successfully!`);
         setIsModalOpen(false);
         setSelectedApplication(null);
@@ -241,7 +273,7 @@ export default function ManageApplication() {
                   <tbody>
                     {filteredApplications.map((application) => (
                       <tr
-                        key={application.application_id}
+                        key={application.organizer_application_id}
                         className="border-b hover:bg-muted/50"
                       >
                         <td className="p-4">
@@ -488,7 +520,7 @@ export default function ManageApplication() {
                         selectedApplication.created_at && (
                         <div className="flex justify-between">
                           <span className="text-sm font-medium">
-                            Last Updated:
+                            Last Updated: 
                           </span>
                           <span className="text-sm">
                             {new Date(
@@ -516,7 +548,7 @@ export default function ManageApplication() {
                       variant="destructive"
                       onClick={() =>
                         handleUpdateStatus(
-                          selectedApplication.application_id,
+                          selectedApplication.organizer_application_id,
                           "rejected"
                         )
                       }
@@ -532,7 +564,7 @@ export default function ManageApplication() {
                     <Button
                       onClick={() =>
                         handleUpdateStatus(
-                          selectedApplication.application_id,
+                          selectedApplication.organizer_application_id,
                           "approved"
                         )
                       }

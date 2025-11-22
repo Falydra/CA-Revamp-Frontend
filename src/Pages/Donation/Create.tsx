@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
 import { Textarea } from "@/Components/ui/textarea";
 import DonorLayout from "@/Layout/AuthenticatedLayout";
-import type { Role, User } from "@/types";
+import type {  User } from "@/types";
 import { apiService } from "@/services/api";
 import AddTextDescriptionButton from "@/Pages/Donation/AddTextDescriptionButton";
 import AddImageDescriptionButton from "@/Pages/Donation/AddImageDescriptionButton";
@@ -149,9 +149,9 @@ export default function CreateCampaign() {
         if (isNaN(fundAmount) || fundAmount <= 0) {
           newErrors.requested_fund_amount =
             "Target fund amount must be greater than 0";
-        } else if (fundAmount < 10000) {
+        } else if (fundAmount < 50000) {
           newErrors.requested_fund_amount =
-            "Minimum target amount is IDR 10,000";
+        "Minimum target amount is IDR 50,000";
         } else if (fundAmount > 999999999999) {
           newErrors.requested_fund_amount = "Target amount is too large";
         }
@@ -243,23 +243,34 @@ export default function CreateCampaign() {
       setErrors({});
 
       const formData = new FormData();
-      formData.append("campaign_type", form.campaign_type);
-      formData.append("title", form.title);
-      formData.append("description", form.description);
+
+      // Map frontend campaign_type to backend 'type' values
+      const type = form.campaign_type === "fund" ? "fundraiser" : "product_donation";
+      formData.append("type", type);
+
+      // Backend expects nested 'attributes' keys
+      formData.append("attributes[title]", form.title);
+      formData.append("attributes[description]", form.description);
 
       if (form.campaign_type === "fund" && form.requested_fund_amount) {
-        formData.append("requested_fund_amount", form.requested_fund_amount);
+        formData.append(
+          "attributes[requested_fund_amount]",
+          form.requested_fund_amount
+        );
       }
 
       if (form.campaign_type === "item" && form.requested_item_quantity) {
         formData.append(
-          "requested_item_quantity",
+          "attributes[requested_item_quantity]",
           form.requested_item_quantity
         );
+        // Product donation requires a selection_mode (bulk/manual). Default to 'bulk' unless UI provides manual selection.
+        formData.append("selection_mode", "bulk");
       }
 
       if (form.header_image) {
-        formData.append("header_image", form.header_image);
+        // file must be posted under attributes.header_image
+        formData.append("attributes[header_image]", form.header_image);
       }
 
       textDescriptions.forEach((desc, index) => {
@@ -287,8 +298,29 @@ export default function CreateCampaign() {
       console.error("Campaign creation error:", error);
 
       if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-        toast.error("Please check the form for errors");
+        const serverErrors = error.response.data.errors;
+
+        // Map backend field keys (e.g. 'attributes.description') to our form field keys ('description')
+        const mappedErrors: any = {};
+        Object.entries(serverErrors).forEach(([field, messages]: any) => {
+          let uiField = field;
+          if (field.startsWith("attributes.")) {
+            uiField = field.replace("attributes.", "");
+          }
+          // also normalize common names
+          if (uiField === 'requested_fund_amount') uiField = 'requested_fund_amount';
+          if (uiField === 'requested_item_quantity') uiField = 'requested_item_quantity';
+          if (uiField === 'header_image') uiField = 'header_image';
+
+          mappedErrors[uiField] = messages;
+
+          // Show a toast for the first message
+          if (Array.isArray(messages) && messages.length > 0) {
+            toast.error(`${uiField}: ${messages[0]}`);
+          }
+        });
+
+        setErrors(mappedErrors);
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {

@@ -19,7 +19,7 @@ export default function Login() {
         <Link to="/" className="text-xl cursor-pointer font-bold text-center bg-gradient-to-br from-blue-500 to-blue-100 bg-clip-text text-transparent ">
           Caritas Aeterna
         </Link>
-        <div className="w-4/12 h-4/5 flex flex-col items-center justify-center bg-indigo-50/50 rounded-md shadow-lg p-8">
+        <div className="w-4/12 h-4/5 flex flex-col items-center justify-center bg-indigo-100/50 rounded-md shadow-lg p-8">
           {showLoginForm && (
             <motion.div
               initial={{ opacity: 0, x: 50 }}

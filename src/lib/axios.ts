@@ -7,7 +7,7 @@ const axiosClient = axios.create({
 
 
 axiosClient.interceptors.request.use(async (config) => {
-  await axios.get(`${import.meta.env.VITE_BACKEND_URL}/sanctum/csrf-cookie`, {
+  await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/sanctum/csrf-cookie`, {
     withCredentials: true,
   });
   return config;

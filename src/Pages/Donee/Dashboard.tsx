@@ -6,6 +6,7 @@ import type { User, Campaign } from "@/types";
 import { Card, CardContent,  CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
+import { FaSpinner } from "react-icons/fa";
 
 function formatPrice(value: number): string {
   if (value == 0) {
@@ -37,13 +38,20 @@ export default function DoneeDashboard() {
 
        
 
-        const campaignResponse = await apiService.getCampaigns({});
+        // Fetch organizer-owned campaigns so pending/rejected items are included
+        const campaignResponse = await apiService.getOrganizerCampaigns({ page: 1, per_page: 10 });
 
-        const campaignList = Array.isArray(campaignResponse?.data?.data)
-          ? campaignResponse.data.data
-          : Array.isArray(campaignResponse?.data)
-          ? campaignResponse.data
-          : [];
+        // apiService.getOrganizerCampaigns returns axios response.data where
+        // the paginated resource array is available as `.data`.
+        // Normalize the result to an array of campaign objects.
+        let campaignList: any[] = [];
+        if (Array.isArray(campaignResponse?.data)) {
+          campaignList = campaignResponse.data;
+        } else if (Array.isArray(campaignResponse?.data?.data)) {
+          campaignList = campaignResponse.data.data;
+        } else if (Array.isArray(campaignResponse)) {
+          campaignList = campaignResponse;
+        }
 
         setCampaigns(campaignList);
 
@@ -56,7 +64,8 @@ export default function DoneeDashboard() {
         ).length;
         const totalFundsRaised = campaignList.reduce(
           (sum: number, campaign: Campaign) => {
-            return sum + (campaign.attributes?.donated_fund_amount || 0);
+            const numericAmount = parseInt(String(campaign.attributes?.donated_fund_amount), 10);
+            return sum + (numericAmount || 0);
           },
           0
         );
@@ -97,7 +106,7 @@ export default function DoneeDashboard() {
     return (
       <DoneeLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading dashboard...</div>
+          <FaSpinner className="animate-spin text-2xl text-gray-600" />
         </div>
       </DoneeLayout>
     );
@@ -105,7 +114,7 @@ export default function DoneeDashboard() {
 
   return (
     <DoneeLayout>
-      <div className="space-y-6 p-4">
+      <div className="space-y-6 p-4 w-full">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome, {user?.name || "Initiator"}!
@@ -216,7 +225,7 @@ export default function DoneeDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Recent Campaigns</CardTitle>
-            <Link to="/dashboard/donee/donations">
+            <Link to="/dashboard/organizer/donations">
               <Button variant="outline" size="sm">
                 View All
               </Button>

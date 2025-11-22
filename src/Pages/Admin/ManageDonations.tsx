@@ -47,15 +47,25 @@ export default function ManageDonations() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Normalize extracting the status string from different API resource shapes
+  const getCampaignStatus = (campaign: any) =>
+    campaign?.attributes?.status ?? campaign?.status ?? "pending";
+
   const fetchCampaigns = async () => {
     try {
-      const response = await apiService.getCampaigns({});
+  // Use admin endpoint so we receive pending/rejected campaigns as well
+  const response = await apiService.admin.getCampaigns({ page: 1, per_page: 100 });
 
-      const campaignList = Array.isArray(response?.data?.data)
-        ? response.data.data
-        : Array.isArray(response?.data)
-        ? response.data
-        : [];
+      // Admin endpoint returns a resource collection: { data: [...], meta: {...} }
+      // apiService.admin.getCampaigns returns axios response.data already, so try these shapes:
+      let campaignList: any[] = [];
+      if (Array.isArray(response?.data)) {
+        campaignList = response.data;
+      } else if (Array.isArray(response?.data?.data)) {
+        campaignList = response.data.data;
+      } else if (Array.isArray(response)) {
+        campaignList = response;
+      }
 
       setCampaigns(campaignList);
       setFilteredCampaigns(campaignList);
@@ -97,8 +107,7 @@ export default function ManageDonations() {
 
     if (statusFilter !== "all") {
       filtered = filtered.filter((campaign) => {
-        const campaignData = campaign.attributes || campaign;
-        return campaignData.status === statusFilter;
+        return getCampaignStatus(campaign) === statusFilter;
       });
     }
 
@@ -108,11 +117,24 @@ export default function ManageDonations() {
 
   const handleStatusUpdate = async (campaignId: string, newStatus: string) => {
     try {
-      await apiService.admin.updateCampaignStatus(campaignId, newStatus);
+      // Map UI statuses to admin API expected values
+      // Backend expects 'accepted' or 'rejected' for review actions.
+      let apiStatus = newStatus;
+      if (newStatus === "on_progress") apiStatus = "accepted";
+      if (newStatus === "rejected") apiStatus = "rejected";
+
+      const res = await apiService.admin.updateCampaignStatus(campaignId, apiStatus);
+      console.log("Admin update response:", res);
       toast.success(`Campaign ${newStatus} successfully`);
-      fetchCampaigns();
+      // Refresh list
+      await fetchCampaigns();
     } catch (error) {
       console.error("Error updating campaign status:", error);
+      // Show more details when available
+      if ((error as any)?.response) {
+        console.error("Response status:", (error as any).response.status);
+        console.error("Response data:", (error as any).response.data);
+      }
       toast.error("Failed to update campaign status");
     }
   };
@@ -285,6 +307,7 @@ export default function ManageDonations() {
                     <TableBody>
                       {currentCampaigns.map((campaign, index) => {
                         const campaignData = campaign.attributes || campaign;
+                        const status = getCampaignStatus(campaign);
                         const organizerName =
                           campaign.relationships?.organizer.attributes.name ||
                           campaign.relationships?.organizer.attributes.name ||
@@ -349,16 +372,10 @@ export default function ManageDonations() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                className={getStatusColor(
-                                  campaignData.status || "pending"
-                                )}
-                              >
+                              <Badge className={getStatusColor(status)}>
                                 <div className="flex items-center gap-1">
-                                  {getStatusIcon(
-                                    campaignData.status || "pending"
-                                  )}
-                                  {campaignData.status || "pending"}
+                                  {getStatusIcon(status)}
+                                  {status}
                                 </div>
                               </Badge>
                             </TableCell>
@@ -428,7 +445,7 @@ export default function ManageDonations() {
                                     </Link>
                                   </DropdownMenuItem>
 
-                                  {campaignData.status === "pending" && (
+                                  {status === "pending" && (
                                     <>
                                       <DropdownMenuItem
                                         onClick={() =>
@@ -456,7 +473,7 @@ export default function ManageDonations() {
                                       </DropdownMenuItem>
                                     </>
                                   )}
-                                  {campaignData.status === "on_progress" && (
+                                  {status === "on_progress" && (
                                     <DropdownMenuItem
                                       onClick={() =>
                                         handleStatusUpdate(

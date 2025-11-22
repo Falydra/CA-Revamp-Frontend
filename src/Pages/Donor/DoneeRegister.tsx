@@ -6,7 +6,7 @@ import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
-import type { User, Identity, OrganizerApplication } from "@/types";
+import type { User,  OrganizerApplication } from "@/types";
 import { apiService } from "@/services/api";
 
 export default function DoneeRegister() {
@@ -84,12 +84,34 @@ export default function DoneeRegister() {
         }
       }
     } catch (error) {
-      console.error("Error checking user status:", error);
+      console.error("Error in checkUserIdentityAndApplication:", error);
     } finally {
       setCheckingIdentity(false);
     }
   };
 
+  const handleReapply = async () => {
+      try {
+        setLoading(true);
+        const resp = await apiService.reapplyOrganizerApplication();
+        if (resp && resp.success) {
+          toast.success("Application re-submitted. Please wait for admin review.");
+          if (resp.data) setExistingApplication(resp.data);
+          else navigate("/dashboard/donor");
+        } else {
+          toast.error("Failed to reapply. Please try again.");
+        }
+      } catch (err: any) {
+        console.error("Reapply error:", err);
+        if (err.response?.data?.message) {
+          toast.error(err.response.data.message);
+        } else {
+          toast.error("Failed to reapply. Please try again later.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -229,6 +251,8 @@ export default function DoneeRegister() {
     }
   };
 
+  console.log("Status", existingApplication);
+
   if (checkingIdentity) {
     return (
       <DonorLayout>
@@ -242,7 +266,7 @@ export default function DoneeRegister() {
   if (existingApplication) {
     return (
       <DonorLayout>
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="w-3/6 h-full flex items-center justify-center">
           <Card>
             <CardHeader>
               <CardTitle>Application Status</CardTitle>
@@ -255,40 +279,50 @@ export default function DoneeRegister() {
                     <span className="font-medium">Status:</span>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        existingApplication.status === "pending"
+                        existingApplication.attributes.status === "pending"
                           ? "bg-yellow-100 text-yellow-800"
-                          : existingApplication.status === "approved"
+                          : existingApplication.attributes.status === "approved"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {existingApplication.status.charAt(0).toUpperCase() +
-                        existingApplication.status.slice(1)}
+                      {existingApplication.attributes.status
+                        ? existingApplication.attributes.status.charAt(0).toUpperCase() +
+                          existingApplication.attributes.status.slice(1)
+                        : "N/A"}
                     </span>
                   </div>
-                  {existingApplication.status === "pending" && (
+                  {existingApplication.attributes.status === "pending" && (
                     <p className="text-sm text-gray-600 mt-2">
                       Your application is being reviewed by our admin team.
                     </p>
                   )}
-                  {existingApplication.status === "approved" && (
+                  {existingApplication.attributes.status === "approved" && (
                     <p className="text-sm text-green-600 mt-2">
                       Congratulations! Your application has been approved.
                     </p>
                   )}
-                  {existingApplication.status === "rejected" && (
+                  {existingApplication.attributes.status === "rejected" && (
                     <p className="text-sm text-red-600 mt-2">
                       Your application was rejected. Please contact support for
                       more information.
                     </p>
                   )}
                 </div>
-                <Button
-                  onClick={() => navigate("/dashboard/donor")}
-                  className="w-full"
-                >
-                  Back to Dashboard
-                </Button>
+                <div className=" md:grid-cols-2 gap-4 items-center">
+                  <Button
+                    onClick={() => navigate("/dashboard/donor")}
+                    className="w-full"
+                  > 
+                    Back to Dashboard
+                  </Button>
+
+                  {existingApplication.attributes.status === "rejected" && (
+                    <Button onClick={handleReapply} className="w-full">
+                      Apply Again
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

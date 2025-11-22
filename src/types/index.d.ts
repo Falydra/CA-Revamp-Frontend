@@ -59,8 +59,11 @@ export type Organizer = {
 export type OrganizerApplication = {
   organizer_application_id: string;
   user_id: string;
-  status: "pending" | "approved" | "rejected";
-  reviewed_at?: string | null;
+  attributes: {
+    status: "pending" | "approved" | "rejected";
+    rejected_message?: string | null;
+    reviewed_at?: string | null;
+  }
   created_at?: string;
   updated_at?: string;
   user?: User;

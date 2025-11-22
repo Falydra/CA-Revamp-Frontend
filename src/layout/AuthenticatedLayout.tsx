@@ -57,25 +57,45 @@ export default function Authenticated({
         const getCurrentUser = async () => {
             try {
                 const storedUser = localStorage.getItem('user');
-                const storedRoles = localStorage.getItem("roles")
-                    ? JSON.parse(localStorage.getItem("roles") || "[]")
-                    : [];
+                const storedRolesRaw = localStorage.getItem("roles");
+                const storedRoles = storedRolesRaw ? JSON.parse(storedRolesRaw) : null;
                 const storedToken = localStorage.getItem('auth_token');
 
                 if (storedUser && storedRoles && storedToken) {
+                    // token-based auth (bearer token stored)
                     const parsedUser = JSON.parse(storedUser);
-                    setAuth({
-                        user: parsedUser,
-                        roles: storedRoles
-                    });
+                    setAuth({ user: parsedUser, roles: storedRoles });
+                } else if (storedUser && storedRoles) {
+                    // user info present without token (possible session-based auth)
+                    const parsedUser = JSON.parse(storedUser);
+                    setAuth({ user: parsedUser, roles: storedRoles });
                 } else {
+                    // Try to recover session-based auth from backend (Sanctum cookie)
+                    try {
+                        const resp = await apiService.getCurrentUser();
+                        // apiService.getCurrentUser returns the backend payload (success/data)
+                        if (resp && resp.success && resp.data) {
+                            const user = resp.data.user;
+                            const roles = Array.isArray(resp.data.roles)
+                                ? resp.data.roles.map((r: any) => (r.name ? r.name : r))
+                                : [];
 
-                    navigate('/auth/login');
-                    return;
+                            // persist minimal info for UI
+                            localStorage.setItem('user', JSON.stringify(user));
+                            localStorage.setItem('roles', JSON.stringify(roles));
+                            setAuth({ user, roles });
+                        } else {
+                            navigate('/auth/login');
+                            return;
+                        }
+                    } catch (err) {
+                        // Not authenticated
+                        navigate('/auth/login');
+                        return;
+                    }
                 }
             } catch (error) {
                 console.error('Error getting current user:', error);
-
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('roles');
@@ -119,7 +139,6 @@ export default function Authenticated({
 
 
     const currentPath = location.pathname;
-    console.log("Roles:", auth.roles);
 
 
     const getMenuItems = (roles: string[]) => {
@@ -164,7 +183,7 @@ export default function Authenticated({
         <SidebarProvider>
             <AppSidebar onMenuItemClick={() => { }} />
             <SidebarInset>
-                <div className="flex flex-col items-start justify-start w-full h-full bg-primary-fg">
+                <div className="flex flex-col items-center justify-start w-full h-full bg-primary-fg">
                     <header className="flex h-16 w-full items-center justify-between gap-2 border-b px-4">
                         <div className="flex flex-row w-full items-center justify-start">
                             <SidebarTrigger className="-ml-1" />
