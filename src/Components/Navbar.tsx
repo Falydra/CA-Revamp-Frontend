@@ -43,7 +43,7 @@ export default function Navbar() {
  
   const getDashboardUrl = (roles: string[]) => {
     if (roles.includes("superadmin")) {
-      return "/dashboard/super-admin";
+      return "/dashboard/superadmin";
     } else if (roles.includes("admin")) {
       return "/dashboard/admin";
     } else if (roles.includes("organizer")) {
@@ -84,6 +84,8 @@ export default function Navbar() {
     }
   };
 
+  console.log("Navbar render - currentPath:", currentPath);
+
   return (
     <div className="w-full fixed h-[80px] top-0 left-0 z-20">
       <div className="flex w-full h-[80px] backdrop-blur-sm z-15 text-primary-bg items-center justify-center top-0 left-0 sticky">
@@ -105,16 +107,7 @@ export default function Navbar() {
             >
               Home
             </Link>
-            <Link
-              to="/news"
-              className={`hover:text-primary-accent px-4 py-2 ${
-                isActiveUrl("/news")
-                  ? "border-b-4 border-blue-500 text-blue-500"
-                  : "text-muted-foreground"
-              }`}
-            >
-              News
-            </Link>
+            
             <Link
               to="/campaigns"
               className={`hover:text-primary-accent px-4 py-2 ${
@@ -138,7 +131,7 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="flex w-full items-end justify-end px-4 overflow-y-auto">
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild className="w-full h-full">
                   <Button
                     className="w-12 h-12 aspect-square rounded-full bg-primary-fg border border-primary-bg hover:bg-primary-bg focus:outline-none"

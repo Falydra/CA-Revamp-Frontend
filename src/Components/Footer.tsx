@@ -12,12 +12,12 @@ export default function Footer() {
             <div className="flex flex-col w-4/12 h-full items-start justify-start gap-4 mt-[20px]">
                 <h1 className="text-2xl font-extrabold text-blue-500">Info Lainnya</h1>
                 <p className="text-blue-400 text-lg text-justify">
-                    Yayasan Nurul Hidayah adalah Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras bibendum tincidunt lorem, nec iaculis nisl. Cras eu vestibulum massa, in tincidunt turpis. Quisque eget mi ac lacus iaculis lobortis nec laoreet nisl. 
+                    Perpustakaan Undip merupakan sebuah Unit Pelaksana Teknis di Universitas Diponegoro yang memberikan layanan perpustakaan. Selain itu UPT Perpustakaan Undip juga didukung oleh Perpustakaan yang ada di masing-masing fakultas dan jurusan. Perpustakaan Undip menempati sebuah gedung berlantai 4 di Kompleks Widya Puraya di belakang Komplek rektorat Universitas Diponegoro. 
                 </p>
                 <div className="text-blue-400">
-                    <p><strong>Email:</strong> info@yayasan.org</p>
-                    <p><strong>Telepon:</strong> +62 812-3456-7890</p>
-                    <p><strong>Alamat:</strong> Jl. ... </p>
+                    <p><strong>Email:</strong> perpustakaanundip@gmail.com</p>
+                    <p><strong>Telepon:</strong> 0821-3587-6098</p>
+                    <p><strong>Alamat:</strong> Jl. Prof Sudarto, SH Gedung Widya Puraya, Tembalang, Semarang, Jawa Tengah 50275</p>
                 </div>
             </div>
 

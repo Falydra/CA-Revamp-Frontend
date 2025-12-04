@@ -7,6 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Input } from "@/Components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
+import { MoreHorizontal, Eye, Edit, Trash2, ClipboardCheck, CheckCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -18,6 +35,10 @@ export default function ActiveDonation() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
   const getCampaignStatus = (campaign: any) =>
@@ -27,12 +48,12 @@ export default function ActiveDonation() {
     const fetchCampaigns = async () => {
       try {
         setLoading(true);
-        // Use organizer-specific endpoint so user only sees their own campaigns
+        
         const response = await apiService.getOrganizerCampaigns({ page: 1, per_page: 100 });
 
-        // apiService.getOrganizerCampaigns returns axios response.data where
-        // the paginated resource array is available as `.data`.
-        // Normalize the result to an array of campaign objects.
+        
+        
+        
         let campaignList: any[] = [];
         if (Array.isArray(response?.data)) {
           campaignList = response.data;
@@ -84,10 +105,10 @@ export default function ActiveDonation() {
   }, [searchTerm, statusFilter, campaigns]);
 
   const handleDelete = async (campaignId: string) => {
-    if (!confirm("Are you sure you want to delete this campaign?")) return;
+    setIsProcessing(true);
     try {
       await apiService.deleteCampaign(campaignId);
-      // refresh
+      
       const resp = await apiService.getOrganizerCampaigns({ page: 1, per_page: 100 });
       const list = Array.isArray(resp?.data?.data)
         ? resp.data.data
@@ -98,15 +119,50 @@ export default function ActiveDonation() {
         : [];
       setCampaigns(list);
       setFilteredCampaigns(list);
-    } catch (err) {
+      setDeleteDialogOpen(false);
+      setSelectedCampaign(null);
+      toast.success("Campaign deleted successfully");
+    } catch (err: any) {
       console.error("Failed to delete campaign:", err);
-      alert("Failed to delete campaign");
+      const errorMessage = err?.response?.data?.message || "Failed to delete campaign. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleEdit = (campaign: any) => {
-    // navigate to organizer edit page - adjust route if different
+    
     navigate(`/dashboard/donee/edit-donation/${campaign.id}`);
+  };
+
+  const handleMarkAsFinished = async (campaignId: string) => {
+    setIsProcessing(true);
+    try {
+      const result = await apiService.finishCampaign(campaignId);
+      console.log("Finish campaign result:", result);
+      
+      
+      const resp = await apiService.getOrganizerCampaigns({ page: 1, per_page: 100 });
+      const list = Array.isArray(resp?.data?.data)
+        ? resp.data.data
+        : Array.isArray(resp?.data)
+        ? resp.data
+        : Array.isArray(resp)
+        ? resp
+        : [];
+      setCampaigns(list);
+      setFilteredCampaigns(list);
+      setFinishDialogOpen(false);
+      setSelectedCampaign(null);
+      toast.success("Campaign marked as finished successfully");
+    } catch (err: any) {
+      console.error("Failed to mark campaign as finished:", err);
+      const errorMessage = err?.response?.data?.message || "Failed to mark campaign as finished. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -128,7 +184,9 @@ export default function ActiveDonation() {
     return (
       <DoneeLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading campaigns...</div>
+          <div className="text-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         </div>
       </DoneeLayout>
     );
@@ -144,7 +202,7 @@ export default function ActiveDonation() {
               Manage and monitor your active campaigns
             </p>
           </div>
-          <Link to="/dashboard/donee/donations/create">
+          <Link to="/dashboard/organizer/create">
             <Button>Create New Campaign</Button>
           </Link>
         </div>
@@ -180,7 +238,7 @@ export default function ActiveDonation() {
                   id="status"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-9 px-2 border text-sm border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending Review</option>
@@ -203,7 +261,7 @@ export default function ActiveDonation() {
                     : "No campaigns match your search criteria"}
                 </p>
                 {campaigns.length === 0 ? (
-                  <Link to="/dashboard/donee/donations/create">
+                  <Link to="/dashboard/organizer/create">
                     <Button>Create Your First Campaign</Button>
                   </Link>
                 ) : (
@@ -231,6 +289,7 @@ export default function ActiveDonation() {
                   <thead>
                     <tr className="text-left border-b">
                       <th className="p-2">#</th>
+                      <th className="p-2">Cover</th>
                       <th className="p-2">Title</th>
                       <th className="p-2">Type</th>
                       <th className="p-2">Status</th>
@@ -253,6 +312,19 @@ export default function ActiveDonation() {
                         <tr key={campaign.id} className="border-b">
                           <td className="p-2 align-top">{idx + 1}</td>
                           <td className="p-2 align-top">
+                            {campaignData.header_image_url ? (
+                              <img 
+                                src={campaignData.header_image_url} 
+                                alt={campaignData.title}
+                                className="w-16 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                No image
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2 align-top">
                             <div className="font-medium">{campaignData.title}</div>
                             <div className="text-xs text-muted-foreground line-clamp-2">{campaignData.description}</div>
                           </td>
@@ -270,11 +342,68 @@ export default function ActiveDonation() {
                             )}
                           </td>
                           <td className="p-2 align-top space-x-2">
-                            <Link to={`/campaigns/${campaignData.slug || campaign.id}`}>
-                              <Button variant="ghost" size="sm">View</Button>
-                            </Link>
-                            <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)}>Edit</Button>
-                            <Button variant="destructive" size="sm" onClick={() => handleDelete(campaign.id)}>Delete</Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/campaigns/${campaignData.slug || campaign.id}`} className="flex items-center cursor-pointer">
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Campaign
+                                  </Link>
+                                </DropdownMenuItem>
+                                
+                                {campaignData.campaign_type === 'product_donation' && (
+                                  <DropdownMenuItem asChild>
+                                    <Link to={`/dashboard/organizer/campaigns/${campaignData.slug || campaign.id}/review-donations`} className="flex items-center cursor-pointer">
+                                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                                      Review Donations
+                                    </Link>
+                                  </DropdownMenuItem>
+                                )}
+                                
+                                {progress >= 100 && status !== 'finished' && (
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedCampaign(campaign);
+                                      setFinishDialogOpen(true);
+                                    }}
+                                    className="cursor-pointer text-primary-bg"
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Mark as Finished
+                                  </DropdownMenuItem>
+                                )}
+                                
+                                <DropdownMenuSeparator />
+                                
+                                <DropdownMenuItem onClick={() => handleEdit(campaign)} className="cursor-pointer">
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    if (status === 'rejected') {
+                                      setSelectedCampaign(campaign);
+                                      setDeleteDialogOpen(true);
+                                    }
+                                  }}
+                                  className={`cursor-pointer ${
+                                    status === 'rejected' 
+                                      ? 'text-red-600' 
+                                      : 'text-gray-400 cursor-not-allowed opacity-50'
+                                  }`}
+                                  disabled={status !== 'rejected'}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  {status === 'rejected' ? 'Delete' : 'Delete (Rejected Only)'}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </td>
                         </tr>
                       );
@@ -286,6 +415,68 @@ export default function ActiveDonation() {
           </Card>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Campaign</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this campaign? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setSelectedCampaign(null);
+              }}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedCampaign && handleDelete(selectedCampaign.id)}
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Finish Campaign Dialog */}
+      <Dialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Campaign as Finished</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to mark this campaign as finished? The campaign has reached its goal and will be closed for further donations.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFinishDialogOpen(false);
+                setSelectedCampaign(null);
+              }}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => selectedCampaign && handleMarkAsFinished(selectedCampaign.id)}
+              className="bg-primary-bg hover:bg-primary-bg/70"
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Processing..." : "Mark as Finished"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DoneeLayout>
   );
 }

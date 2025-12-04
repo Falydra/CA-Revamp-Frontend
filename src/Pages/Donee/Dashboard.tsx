@@ -7,6 +7,7 @@ import { Card, CardContent,  CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { FaSpinner } from "react-icons/fa";
+import { Loader2 } from "lucide-react";
 
 function formatPrice(value: number): string {
   if (value == 0) {
@@ -106,7 +107,7 @@ export default function DoneeDashboard() {
     return (
       <DoneeLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <FaSpinner className="animate-spin text-2xl text-gray-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </DoneeLayout>
     );
@@ -115,7 +116,7 @@ export default function DoneeDashboard() {
   return (
     <DoneeLayout>
       <div className="space-y-6 p-4 w-full">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
+        <div className="bg-primary-bg text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome, {user?.name || "Initiator"}!
           </h1>
@@ -180,47 +181,7 @@ export default function DoneeDashboard() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/dashboard/donee/donations/create">
-                <Button className="w-full h-16 text-left flex-col items-start justify-center">
-                  <span className="font-semibold">Create New Campaign</span>
-                  <span className="text-xs opacity-80">
-                    Start a new donation campaign
-                  </span>
-                </Button>
-              </Link>
-
-              <Link to="/dashboard/donee/donations">
-                <Button
-                  variant="outline"
-                  className="w-full h-16 text-left flex-col items-start justify-center"
-                >
-                  <span className="font-semibold">Manage Campaigns</span>
-                  <span className="text-xs opacity-80">
-                    View and edit your campaigns
-                  </span>
-                </Button>
-              </Link>
-
-              <Link to="/dashboard/donee/profile">
-                <Button
-                  variant="outline"
-                  className="w-full h-16 text-left flex-col items-start justify-center"
-                >
-                  <span className="font-semibold">Profile Settings</span>
-                  <span className="text-xs opacity-80">
-                    Update your profile
-                  </span>
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -234,7 +195,39 @@ export default function DoneeDashboard() {
           <CardContent>
             {campaigns.length > 0 ? (
               <div className="space-y-4">
-                {campaigns.slice(0, 2).map((campaign) => {
+                {[...campaigns]
+                  .sort((a, b) => {
+                    // Get created_at from attributes
+                    const dateStrA = a.attributes?.created_at || a.created_at;
+                    const dateStrB = b.attributes?.created_at || b.created_at;
+                    
+                    // Parse dates - handle both ISO format and custom format (DD-MM-YYYY HH:mm:ss)
+                    let dateA: Date;
+                    let dateB: Date;
+                    
+                    if (dateStrA && typeof dateStrA === 'string' && dateStrA.includes('-') && dateStrA.split('-')[0].length === 2) {
+                      // Format: DD-MM-YYYY HH:mm:ss
+                      const [datePart, timePart] = dateStrA.split(' ');
+                      const [day, month, year] = datePart.split('-');
+                      dateA = new Date(`${year}-${month}-${day}${timePart ? ' ' + timePart : ''}`);
+                    } else {
+                      dateA = new Date(dateStrA || 0);
+                    }
+                    
+                    if (dateStrB && typeof dateStrB === 'string' && dateStrB.includes('-') && dateStrB.split('-')[0].length === 2) {
+                      // Format: DD-MM-YYYY HH:mm:ss
+                      const [datePart, timePart] = dateStrB.split(' ');
+                      const [day, month, year] = datePart.split('-');
+                      dateB = new Date(`${year}-${month}-${day}${timePart ? ' ' + timePart : ''}`);
+                    } else {
+                      dateB = new Date(dateStrB || 0);
+                    }
+                    
+                    // Sort descending (newest first)
+                    return dateB.getTime() - dateA.getTime();
+                  })
+                  .slice(0, 2)
+                  .map((campaign) => {
                   const campaignData = campaign.attributes || campaign;
                   const progress =
                     campaignData.requested_fund_amount > 0
@@ -287,8 +280,8 @@ export default function DoneeDashboard() {
 
                       <div className="text-right">
                         <p className="font-bold">
-                          Rp {formatPrice(campaignData.donated_fund_amount)} / Rp{" "}
-                          {formatPrice(campaignData.requested_fund_amount)}
+                          {campaignData.requested_fund_amount > 0 ? "Rp." + formatPrice(campaignData.donated_fund_amount) + "/" + formatPrice(campaignData.requested_fund_amount)
+                           : campaignData.donated_item_quantity + "/" + campaignData.requested_item_quantity + " " + "Items"}
                         </p>
                         <Link
                           to={`/campaigns/${campaignData.slug || campaign.id}`}

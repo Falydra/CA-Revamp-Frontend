@@ -157,10 +157,18 @@ export default function Authenticated({
 
     const menuItems = getMenuItems(auth.roles);
 
-
-    const activeMenuItem = menuItems
-        .filter(item => currentPath.startsWith(item.url))
-        .sort((a, b) => b.url.length - a.url.length)[0];
+    // Special handling for nested pages like review-donations
+    const activeMenuItem = (() => {
+        // Check for review-donations page - should map to "My Donations"
+        if (currentPath.includes('/review-donations')) {
+            return menuItems.find(item => item.url === '/dashboard/organizer/donations');
+        }
+        
+        // Default: find the best matching menu item by URL prefix
+        return menuItems
+            .filter(item => currentPath.startsWith(item.url))
+            .sort((a, b) => b.url.length - a.url.length)[0];
+    })();
 
 
     const getDashboardUrl = (roles: string[]) => {
@@ -212,7 +220,7 @@ export default function Authenticated({
                         </div>
                         
                         <div className="flex flex-row items-center justify-center">
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild className="w-full h-full">
                                     <Button className="w-10 h-10 aspect-square rounded-full p-1 bg-primary-fg border items-center flex border-primary-bg">
                                         <IoPersonOutline className="w-6 h-6 text-primary-bg " />

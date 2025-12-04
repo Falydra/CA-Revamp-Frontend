@@ -98,6 +98,68 @@ export const apiService = {
     }
   },
 
+  updatePassword: async (passwordData: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  }) => {
+    try {
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const response = await api.put("/user/password", passwordData, {
+        headers: {
+          "X-XSRF-TOKEN": csrfToken ? decodeURIComponent(csrfToken) : "",
+        },
+        withCredentials: true,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("Update password error:", error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (resetData: {
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }) => {
+    try {
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const response = await axios.post(
+        "http://localhost:8000/api/v1/password/reset",
+        resetData,
+        {
+          headers: {
+            "X-XSRF-TOKEN": csrfToken ? decodeURIComponent(csrfToken) : "",
+          },
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
+    }
+  },
+
   logout: async () => {
     const token = localStorage.getItem("auth_token");
     console.log(api.getUri());
@@ -145,6 +207,97 @@ export const apiService = {
         return response.data;
       } catch (error) {
         console.error('Get organizer campaigns error:', error);
+        throw error;
+      }
+    },
+
+    // Get donations for a specific campaign (organizer view)
+    getOrganizerCampaignDonations: async (campaignId: string, page = 1, per_page = 100) => {
+      try {
+        const response = await api.get(`/organizer/${campaignId}/donations`, {
+          params: { page, per_page }
+        });
+        return response.data;
+      } catch (error: any) {
+        console.error('Get organizer campaign donations error:', error);
+        console.error("Error status:", error?.response?.status);
+        console.error("Error data:", error?.response?.data);
+        console.error("Request URL:", error?.config?.url);
+        throw error;
+      }
+    },
+
+    // Get donated items for a specific donation
+    getOrganizerDonatedItems: async (donationId: string, page = 1, per_page = 10) => {
+      try {
+        const response = await api.get(`/organizer/donations/${donationId}/donated-items`, {
+          params: { page, per_page }
+        });
+        return response.data;
+      } catch (error: any) {
+        console.error('Get organizer donated items error:', error);
+        console.error("Error status:", error?.response?.status);
+        console.error("Error data:", error?.response?.data);
+        console.error("Request URL:", error?.config?.url);
+        throw error;
+      }
+    },
+
+    // Get single donated item details
+    getOrganizerDonatedItem: async (donatedItemId: string) => {
+      try {
+        const response = await api.get(`/organizer/donated-items/${donatedItemId}`);
+        return response.data;
+      } catch (error) {
+        console.error('Get organizer donated item error:', error);
+        throw error;
+      }
+    },
+
+    // Update donated item status (received, not_received, cancelled, declined)
+    updateDonatedItemStatus: async (donatedItemId: string, status: string) => {
+      try {
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+        
+        const response = await api.post(
+          `/organizer/donated-items/${donatedItemId}`,
+          { status },
+          {
+            headers: {
+              "X-XSRF-TOKEN": csrfToken ? decodeURIComponent(csrfToken) : "",
+            },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error('Update donated item status error:', error);
+        throw error;
+      }
+    },
+
+    // Verify donated item (change status to on_delivery)
+    verifyDonatedItem: async (donatedItemId: string) => {
+      try {
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+        
+        const response = await api.post(
+          `/organizer/donated-items/${donatedItemId}/verify`,
+          {},
+          {
+            headers: {
+              "X-XSRF-TOKEN": csrfToken ? decodeURIComponent(csrfToken) : "",
+            },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error('Verify donated item error:', error);
         throw error;
       }
     },
@@ -209,10 +362,50 @@ export const apiService = {
 
   deleteCampaign: async (id: string) => {
     try {
-      const response = await api.delete(`/campaigns/${id}`);
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+      const response = await api.delete(`/campaigns/${id}`, {
+        headers,
+        withCredentials: true,
+      });
       return response.data;
     } catch (error) {
       console.error("Delete campaign error:", error);
+      throw error;
+    }
+  },
+
+  finishCampaign: async (campaignId: string) => {
+    try {
+      await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+        withCredentials: true,
+      });
+
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="))
+        ?.split("=")[1];
+
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+      const response = await api.post(`/campaigns/${campaignId}/donations/finish`, {}, {
+        headers,
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Finish campaign error:", error);
       throw error;
     }
   },
@@ -278,6 +471,23 @@ export const apiService = {
     }
   },
 
+  // Get donated items for a specific campaign with optional status filter
+  getCampaignDonatedItems: async (campaignId: string, status?: string) => {
+    try {
+      const url = `/campaigns/${campaignId}/items`;
+      const response = await api.get(url, {
+        params: status ? { status } : undefined
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error("Get campaign donated items error:", error);
+      console.error("Error status:", error?.response?.status);
+      console.error("Error data:", error?.response?.data);
+      console.error("Request URL:", error?.config?.url);
+      throw error;
+    }
+  },
+
   createDonatedItem: async (itemData: any) => {
     try {
       const response = await api.post("/donated-items", itemData);
@@ -313,6 +523,7 @@ export const apiService = {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
     const endpoints = ["/donor/donations", "/donations/me", "/donations"];
+    
     for (const ep of endpoints) {
       try {
         const res = await api.get(ep, {
@@ -320,16 +531,52 @@ export const apiService = {
           headers,
           withCredentials: true,
         });
+        console.log(`Successfully fetched donations from ${ep}`);
         return res.data;
       } catch (err: any) {
         const status = err?.response?.status;
-        if (status === 401) throw err;
+        console.log(`Endpoint ${ep} failed with status ${status}`);
+        
+        // If 404, try next endpoint
         if (status === 404) continue;
-        throw err;
+        
+        // If 401, also try next endpoint (might be endpoint-specific auth issue)
+        if (status === 401) continue;
+        
+        // For other errors, continue trying
+        continue;
       }
     }
 
-    return { data: [] };
+    // If all endpoints failed, return empty data instead of throwing
+    console.log("All donation endpoints failed, returning empty data");
+    return { data: { data: [], current_page: 1, last_page: 1, total: 0 } };
+  },
+
+  getDoneeCampaigns: async (page = 1, per_page = 10) => {
+    try {
+      const response = await api.get("/organizer/campaigns", {
+        params: { page, per_page },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Get donee campaigns error:", error);
+      throw error;
+    }
+  },
+
+  getCampaignDonations: async (campaignId: string, page = 1, per_page = 10) => {
+    try {
+      const response = await api.get(`/campaigns/${campaignId}/donations`, {
+        params: { page, per_page },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Get campaign donations error:", error);
+      throw error;
+    }
   },
 
   updateOrganizerApplicationStatus: async (
@@ -665,11 +912,13 @@ export const apiService = {
 
 
   admin: {
-    getUsers: async (page = 1, per_page = 10) => {
+    getUsers: async (page = 1, per_page = 10, search?: string) => {
       try {
-        const response = await api.get("/admin/users", {
-          params: { page, per_page },
-        });
+        const params: any = { page, per_page };
+        if (search && search.trim() !== '') {
+          params.search = search.trim();
+        }
+        const response = await api.get("/admin/users", { params });
         return response.data;
       } catch (error) {
         console.error("Get users error:", error);
@@ -823,6 +1072,158 @@ export const apiService = {
         return response.data;
       } catch (error) {
         console.error("Update donation status error:", error);
+        throw error;
+      }
+    },
+  },
+
+  superAdmin: {
+    getDashboardStats: async () => {
+      try {
+        const response = await api.get("/superadmin/dashboard-stats");
+        return response.data;
+      } catch (error) {
+        console.error("Get super admin dashboard stats error:", error);
+        throw error;
+      }
+    },
+
+    getAdmins: async (page = 1, per_page = 10) => {
+      try {
+        const response = await api.get("/superadmin/admins", {
+          params: { page, per_page },
+        });
+        console.log("getAdmins raw response:", response);
+        console.log("getAdmins response.data:", response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Get admins error:", error);
+        throw error;
+      }
+    },
+
+    createAdmin: async (adminData: {
+      name: string;
+      email: string;
+      password: string;
+      password_confirmation: string;
+    }) => {
+      try {
+        await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+          withCredentials: true,
+        });
+
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+        const response = await api.post("/superadmin/admins", adminData, {
+          headers,
+          withCredentials: true,
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Create admin error:", error);
+        throw error;
+      }
+    },
+
+    updateAdmin: async (adminId: string, adminData: any) => {
+      try {
+        const response = await api.put(`/superadmin/admins/${adminId}`, adminData);
+        return response.data;
+      } catch (error) {
+        console.error("Update admin error:", error);
+        throw error;
+      }
+    },
+
+    deleteAdmin: async (adminId: string) => {
+      try {
+        const response = await api.delete(`/superadmin/admins/${adminId}`);
+        return response.data;
+      } catch (error) {
+        console.error("Delete admin error:", error);
+        throw error;
+      }
+    },
+
+    getAllUsers: async (page = 1, per_page = 10) => {
+      try {
+        const response = await api.get("/superadmin/users", {
+          params: { page, per_page },
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Get all users error:", error);
+        throw error;
+      }
+    },
+
+    getUsers: async (page = 1, per_page = 10, search?: string) => {
+      try {
+        const params: any = { page, per_page };
+        if (search && search.trim() !== '') {
+          params.search = search.trim();
+        }
+        const response = await api.get("/superadmin/users", { params });
+        return response.data;
+      } catch (error) {
+        console.error("Get users error:", error);
+        throw error;
+      }
+    },
+
+    promoteToAdmin: async (userId: string) => {
+      try {
+        await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+          withCredentials: true,
+        });
+
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+        const response = await api.post(`/superadmin/users/${userId}/promote-to-admin`, {}, {
+          headers,
+          withCredentials: true,
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Promote to admin error:", error);
+        throw error;
+      }
+    },
+
+    demoteAdmin: async (userId: string) => {
+      try {
+        await axios.get("http://localhost:8000/api/v1/sanctum/csrf-cookie", {
+          withCredentials: true,
+        });
+
+        const csrfToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrfToken);
+
+        const response = await api.post(`/superadmin/users/${userId}/demote-from-admin`, {}, {
+          headers,
+          withCredentials: true,
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Demote admin error:", error);
         throw error;
       }
     },

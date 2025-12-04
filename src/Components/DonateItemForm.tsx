@@ -59,7 +59,14 @@ export default function DonateItemForm({
     : undefined;
 
   const [slidePage, setSlidePage] = useState(0);
-  const [requestData, setRequestData] = useState<RequestData>({});
+  const [requestData, setRequestData] = useState<RequestData>({
+    username: "",
+    delivery_service: "",
+    resi: "",
+    books: [],
+    supplies: [],
+    package_picture: undefined,
+  });
   const [errorFields, setErrorFields] = useState<ErrorFields>({
     packagePicture: false,
     deliveryService: false,
@@ -74,13 +81,30 @@ export default function DonateItemForm({
     setRequestData((prev) => {
       let books = prev.books ? [...prev.books] : [];
 
+      
+      const isbn = book.attributes?.isbn ?? book.id;
+
       if (checked) {
         books.push({
-          isbn: book.id,
+          isbn: isbn,
           quantity: 1,
         });
       } else {
-        books = books.filter((b) => b.isbn != book.id);
+        books = books.filter((b) => b.isbn != isbn);
+      }
+
+      return { ...prev, books };
+    });
+  };
+
+  const updateBookQuantity = (book: RequestedBook, quantity: number) => {
+    setRequestData((prev) => {
+      let books = prev.books ? [...prev.books] : [];
+      const isbn = book.attributes?.isbn ?? book.id;
+      
+      const bookIndex = books.findIndex((b) => b.isbn === isbn);
+      if (bookIndex !== -1) {
+        books[bookIndex].quantity = Math.max(1, quantity);
       }
 
       return { ...prev, books };
@@ -102,6 +126,19 @@ export default function DonateItemForm({
         });
       } else {
         supplies = supplies.filter((s) => s.id != supply.id);
+      }
+
+      return { ...prev, supplies };
+    });
+  };
+
+  const updateSupplyQuantity = (supply: RequestedSupply, quantity: number) => {
+    setRequestData((prev) => {
+      let supplies = prev.supplies ? [...prev.supplies] : [];
+      
+      const supplyIndex = supplies.findIndex((s) => s.id === supply.id);
+      if (supplyIndex !== -1) {
+        supplies[supplyIndex].quantity = Math.max(1, quantity);
       }
 
       return { ...prev, supplies };
@@ -205,7 +242,7 @@ export default function DonateItemForm({
   };
 
   return (
-    <DialogContent>
+    <DialogContent className="max-w-2xl">
       <DialogHeader className="flex flex-col gap-4">
         <DialogTitle>Confirm your donation</DialogTitle>
         <Carousel className="flex flex-col gap-4">
@@ -216,40 +253,79 @@ export default function DonateItemForm({
                   <p className="font-bold text-gray-600">
                     Select Items to Donate
                   </p>
-                  <div className="flex flex-col gap-2 max-h-96 overflow-y-scroll scrollbar-hide">
+                  <div className="flex flex-col gap-2 max-h-96 overflow-y-auto scrollbar-hide pr-2">
                     {requestedBooks?.map((book) => {
                       const isSelected = requestData.books?.some(
-                        (b) => b.isbn === book.id
+                        (b) => b.isbn === (book.attributes?.isbn ?? book.id)
+                      );
+                      const selectedBook = requestData.books?.find(
+                        (b) => b.isbn === (book.attributes?.isbn ?? book.id)
                       );
 
                       return (
-                        <label
+                        <div
                           key={book.id}
-                          htmlFor={book.id}
-                          className="px-2 py-1 select-none hover:cursor-pointer"
+                          className="px-2 py-1 select-none"
                         >
-                          <div className="flex flex-row gap-4 items-center">
-                            <input
-                              type="checkbox"
-                              name={book.id}
-                              id={book.id}
-                              checked={!!isSelected}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleBookSelection(book, e.target.checked);
-                              }}
-                            />
-                            <div className="flex flex-row justify-between">
-                              <div className="flex flex-col">
-                                <p>{book.attributes.title}</p>
+                          <div className="flex flex-row gap-4 items-center justify-between w-full">
+                            <div className="flex flex-row gap-2 items-center flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                name={book.id}
+                                id={book.id}
+                                checked={!!isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  toggleBookSelection(book, e.target.checked);
+                                }}
+                                className="flex-shrink-0"
+                              />
+                              <label 
+                                htmlFor={book.id}
+                                className="flex flex-col min-w-0 flex-1 cursor-pointer overflow-hidden"
+                              >
+                                <p className="truncate text-sm">{book.attributes.title}</p>
                                 <p className="text-xs text-gray-400">Book</p>
-                              </div>
-                              <div className="flex flex-row gap-2">
-                                <p></p>
-                              </div>
+                              </label>
                             </div>
+                            {isSelected && (
+                              <div className="flex flex-row items-center gap-1 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 border rounded flex items-center justify-center hover:bg-gray-100 text-sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    updateBookQuantity(book, (selectedBook?.quantity || 1) - 1);
+                                  }}
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={selectedBook?.quantity || 1}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    const value = parseInt(e.target.value) || 1;
+                                    updateBookQuantity(book, value);
+                                  }}
+                                  className="w-12 text-center border rounded py-1 outline-none text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 border rounded flex items-center justify-center hover:bg-gray-100 text-sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    updateBookQuantity(book, (selectedBook?.quantity || 1) + 1);
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
 
@@ -257,35 +333,74 @@ export default function DonateItemForm({
                       const isSelected = requestData.supplies?.some(
                         (i) => i.id === item.id
                       );
+                      const selectedSupply = requestData.supplies?.find(
+                        (i) => i.id === item.id
+                      );
 
                       return (
-                        <label
+                        <div
                           key={item.id}
-                          htmlFor={item.id}
-                          className="px-2 py-1 select-none hover:cursor-pointer"
+                          className="px-2 py-1 select-none"
                         >
-                          <div className="flex flex-row gap-4 items-center">
-                            <input
-                              type="checkbox"
-                              name={item.id}
-                              id={item.id}
-                              checked={!!isSelected}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleSupplySelection(item, e.target.checked);
-                              }}
-                            />
-                            <div className="flex flex-row justify-between">
-                              <div className="flex flex-col">
-                                <p>{item.attributes.name}</p>
+                          <div className="flex flex-row gap-4 items-center justify-between w-full">
+                            <div className="flex flex-row gap-2 items-center flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                name={item.id}
+                                id={item.id}
+                                checked={!!isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  toggleSupplySelection(item, e.target.checked);
+                                }}
+                                className="flex-shrink-0"
+                              />
+                              <label
+                                htmlFor={item.id}
+                                className="flex flex-col min-w-0 flex-1 cursor-pointer overflow-hidden"
+                              >
+                                <p className="truncate text-sm">{item.attributes.name}</p>
                                 <p className="text-xs text-gray-400">Supply</p>
-                              </div>
-                              <div className="flex flex-row gap-2">
-                                <p></p>
-                              </div>
+                              </label>
                             </div>
+                            {isSelected && (
+                              <div className="flex flex-row items-center gap-1 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 border rounded flex items-center justify-center hover:bg-gray-100 text-sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    updateSupplyQuantity(item, (selectedSupply?.quantity || 1) - 1);
+                                  }}
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={selectedSupply?.quantity || 1}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    const value = parseInt(e.target.value) || 1;
+                                    updateSupplyQuantity(item, value);
+                                  }}
+                                  className="w-12 text-center border rounded py-1 outline-none text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 border rounded flex items-center justify-center hover:bg-gray-100 text-sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    updateSupplyQuantity(item, (selectedSupply?.quantity || 1) + 1);
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
                   </div>

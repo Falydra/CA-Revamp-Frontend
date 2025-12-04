@@ -14,16 +14,26 @@ import DoneeRegister from "@/Pages/Donor/DoneeRegister";
 import DoneeDashboard from "@/Pages/Donee/Dashboard";
 import ActiveDonation from "@/Pages/Donee/ActiveDonation";
 import DoneeProfile from "@/Pages/Donee/Profile";
+import ReviewDonations from "@/Pages/Donee/ReviewDonations";
+import CampaignDonations from "@/Pages/Donee/CampaignDonations";
+import DoneeDonationHistory from "@/Pages/Donee/DonationHistory";
 import AdminDashboard from "@/Pages/Admin/Dashboard";
 import ManageApplication from "@/Pages/Admin/ManageApplication";
 import ManageDonations from "@/Pages/Admin/ManageDonations";
 import ManageUsers from "@/Pages/Admin/ManageUsers";
 import AdminProfile from "@/Pages/Admin/Profile";
+import AdminDonationHistory from "@/Pages/Admin/DonationHistory";
 import CreateDonation from "@/Pages/Donation/Create";
 
 
 import "./index.css";
 import { ErrorBoundary } from "@/Components/ErrorBoundary";
+import { Toaster } from "@/Components/ui/sonner";
+import SuperAdminDashboard from "@/Pages/SuperAdmin/Dashboard";
+import ManageAdmins from "@/Pages/SuperAdmin/ManageAdmins";
+import ManageUsersPage from "@/Pages/SuperAdmin/ManageUsers";
+import SuperAdminProfile from "@/Pages/SuperAdmin/Profile";
+import SuperAdminDonationHistory from "@/Pages/SuperAdmin/DonationHistory";
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -44,16 +54,26 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/dashboard/donor/profile/registration" element={<DoneeRegister />} />
             <Route path="/dashboard/organizer" element={<DoneeDashboard />} />
             <Route path="/dashboard/organizer/donations" element={<ActiveDonation />} />
+            <Route path="/dashboard/organizer/campaign-donations" element={<CampaignDonations />} />
+            <Route path="/dashboard/organizer/history" element={<DoneeDonationHistory />} />
             <Route path="/dashboard/organizer/create" element={<CreateDonation/>} />
             <Route path="/dashboard/organizer/profile" element={<DoneeProfile />} />
+            <Route path="/dashboard/organizer/campaigns/:campaignSlug/review-donations" element={<ReviewDonations />} />
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
             <Route path="/dashboard/admin/manage-application" element={<ManageApplication />} />
             <Route path="/dashboard/admin/manage-donations" element={<ManageDonations />} />
             <Route path="/dashboard/admin/manage-users" element={<ManageUsers />} />
+            <Route path="/dashboard/admin/history" element={<AdminDonationHistory />} />
             <Route path="/dashboard/admin/profile" element={<AdminProfile />} />
+            <Route path="/dashboard/superadmin" element={<SuperAdminDashboard/>} />
+            <Route path="/dashboard/superadmin/manage-admins" element={<ManageAdmins/>} />
+            <Route path="/dashboard/superadmin/manage-users" element={<ManageUsersPage/>} />
+            <Route path="/dashboard/superadmin/history" element={<SuperAdminDonationHistory/>} />
+            <Route path="/dashboard/superadmin/profile" element={<SuperAdminProfile/>} />
 
           </Routes>
         </Suspense>
+        <Toaster />
       </ErrorBoundary>
     </BrowserRouter>
   </React.StrictMode>

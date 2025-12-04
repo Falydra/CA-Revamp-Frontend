@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 
 function formatPrice(value: number): string {
@@ -72,7 +73,30 @@ export default function AdminDashboard() {
           ? campaignResponse.data
           : [];
 
-        setRecentCampaigns(campaignList.slice(0, 5));
+        // Fetch admin campaigns to get all campaigns including pending from organizers
+        let allCampaigns = campaignList;
+        try {
+          const adminCampaignResponse = await apiService.admin.getCampaigns({ per_page: 1000 });
+          console.log("Admin campaigns response:", adminCampaignResponse);
+          
+          // The response structure might be { data: { data: [...] } } or { data: [...] }
+          const adminCampaigns = Array.isArray(adminCampaignResponse?.data?.data)
+            ? adminCampaignResponse.data.data
+            : Array.isArray(adminCampaignResponse?.data)
+            ? adminCampaignResponse.data
+            : [];
+          
+          if (adminCampaigns.length > 0) {
+            allCampaigns = adminCampaigns;
+            console.log("Using admin campaigns:", allCampaigns.length, "campaigns");
+          } else {
+            console.log("Admin campaigns returned empty, using public campaigns");
+          }
+        } catch (error) {
+          console.log("Could not fetch admin campaigns, using public campaigns", error);
+        }
+
+        setRecentCampaigns(allCampaigns.slice(0, 5));
 
         let totalUsers = 0;
         try {
@@ -84,43 +108,78 @@ export default function AdminDashboard() {
           console.log("Could not fetch users count", error);
         }
 
+        // Fetch pending applications count
+        let pendingApplicationsCount = 0;
+        try {
+          const applicationsResponse = await apiService.admin.getOrganizerApplications(1, 1000);
+          console.log("Applications response:", applicationsResponse);
+          
+          const applications = Array.isArray(applicationsResponse?.data?.data)
+            ? applicationsResponse.data.data
+            : Array.isArray(applicationsResponse?.data)
+            ? applicationsResponse.data
+            : [];
+          
+          pendingApplicationsCount = applications.filter(
+            (app: any) => app.attributes?.status === "pending" || app.status === "pending"
+          ).length;
+          
+          console.log("Pending applications count:", pendingApplicationsCount);
+        } catch (error) {
+          console.log("Could not fetch applications count", error);
+        }
+
         
-        const totalCampaigns = campaignList.length;
-        const pendingCampaigns = campaignList.filter(
+        const totalCampaigns = allCampaigns.length;
+        const pendingCampaigns = allCampaigns.filter(
           (c: Campaign) => c.attributes?.status === "pending"
         ).length;
-        const activeCampaigns = campaignList.filter(
+        const activeCampaigns = allCampaigns.filter(
           (c: Campaign) => c.attributes?.status === "on_progress"
         ).length;
+        
+        console.log("Total campaigns:", totalCampaigns);
+        console.log("Pending campaigns:", pendingCampaigns);
+        console.log("Campaigns with pending status:", allCampaigns.filter(
+          (c: Campaign) => c.attributes?.status === "pending"
+        ));
 
-        const totalFundsRaised = campaignList.reduce(
+        const totalFundsRaised = allCampaigns.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.donated_fund_amount || 0;
-            return sum + amount;
+            // Ensure amount is converted to number
+            const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
           },
           0
         );
 
-        const totalFundsRequired = campaignList.reduce(
+        const totalFundsRequired = allCampaigns.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.requested_fund_amount || 0;
-            return sum + amount;
+            // Ensure amount is converted to number
+            const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
           },
           0
         );
 
-        const totalItemsRequired = campaignList.reduce(
+        const totalItemsRequired = allCampaigns.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.requested_item_quantity || 0;
-            return sum + amount;
+            // Ensure amount is converted to number
+            const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
           },
           0
         );
 
-        const totalItemsDonated = campaignList.reduce(
+        const totalItemsDonated = allCampaigns.reduce(
           (sum: number, campaign: Campaign) => {
             const amount = campaign.attributes?.donated_item_quantity || 0;
-            return sum + amount;
+            // Ensure amount is converted to number
+            const numericAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
           },
           0
         );
@@ -136,7 +195,7 @@ export default function AdminDashboard() {
           totalItemsRequired:
             apiStats?.total_items_required || totalItemsRequired,
           totalItemsDonated: apiStats?.total_items_donated || totalItemsDonated,
-          pendingApplications: apiStats?.pending_applications || 0,
+          pendingApplications: apiStats?.pending_applications || pendingApplicationsCount,
         });
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -182,7 +241,7 @@ export default function AdminDashboard() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading dashboard...</div>
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </AdminLayout>
     );
@@ -191,7 +250,7 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-6 p-4 w-full">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
+        <div className="bg-primary-bg text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome, {user?.name || "Admin"}!
           </h1>
@@ -200,7 +259,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -286,55 +345,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link to="/dashboard/admin/manage-users">
-                <Button className="w-full h-16 text-left flex-col items-start justify-center">
-                  <span className="font-semibold">Manage Users</span>
-                  <span className="text-xs opacity-80">
-                    View and edit users
-                  </span>
-                </Button>
-              </Link>
-
-              <Link to="/dashboard/admin/manage-donations">
-                <Button
-                  variant="outline"
-                  className="w-full h-16 text-left flex-col items-start justify-center"
-                >
-                  <span className="font-semibold">Manage Campaigns</span>
-                  <span className="text-xs opacity-80">Review and approve</span>
-                </Button>
-              </Link>
-
-              <Link to="/dashboard/admin/manage-application">
-                <Button
-                  variant="outline"
-                  className="w-full h-16 text-left flex-col items-start justify-center"
-                >
-                  <span className="font-semibold">Applications</span>
-                  <span className="text-xs opacity-80">
-                    Organizer applications
-                  </span>
-                </Button>
-              </Link>
-
-              <Link to="/dashboard/admin/profile">
-                <Button
-                  variant="outline"
-                  className="w-full h-16 text-left flex-col items-start justify-center"
-                >
-                  <span className="font-semibold">Profile</span>
-                  <span className="text-xs opacity-80">Account settings</span>
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -348,7 +359,7 @@ export default function AdminDashboard() {
           <CardContent>
             {recentCampaigns.length > 0 ? (
               <div className="space-y-4">
-                {recentCampaigns.map((campaign) => {
+                {recentCampaigns.slice(0,2).sort().map((campaign) => {
                   const campaignData = campaign.attributes || campaign;
                   const organizerName =
                     campaign.relationships?.organizer?.attributes?.name ||
@@ -401,7 +412,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="text-right">
-                        {campaign.attributes.requested_fund_amount >= 0 ? (
+                        {campaign.attributes.requested_fund_amount > 0 ? (
                           <>
                             <p className="font-bold">
                               Rp{" "}

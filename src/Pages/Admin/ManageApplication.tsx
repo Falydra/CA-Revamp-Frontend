@@ -54,6 +54,9 @@ export default function ManageApplication() {
           const owner = item.relationships?.owner?.attributes || {};
           const identity = item.relationships?.applicant_identity || {};
 
+          // Debug: Log identity data
+          console.log('Identity data:', identity);
+
           // Map backend status 'accepted' -> 'approved' for UI
           const status: 'pending' | 'approved' | 'rejected' =
             attr.status === 'accepted' ? 'approved' : (attr.status as any);
@@ -71,7 +74,7 @@ export default function ManageApplication() {
             nik: identity.nik || '',
             phone_number: identity.phone_number || '',
             gender: identity.gender || '',
-            date_of_birth: identity.date_of_birth || '',
+            date_of_birth: identity.date_of_birth || null,
             id_card_image: identity.id_card_image_url || '',
           } as any;
         });
@@ -192,7 +195,7 @@ export default function ManageApplication() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading applications...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         </div>
       </AdminLayout>
     );
@@ -232,7 +235,7 @@ export default function ManageApplication() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-9 px-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -279,15 +282,15 @@ export default function ManageApplication() {
                         <td className="p-4">
                           <div>
                             <p className="font-medium">
-                              {application.full_name}
+                              {application.full_name || "N/A"}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {application.user?.email || "No email"}
                             </p>
                           </div>
                         </td>
-                        <td className="p-4">{application.nik}</td>
-                        <td className="p-4">{application.phone_number}</td>
+                        <td className="p-4">{application.nik || "N/A"}</td>
+                        <td className="p-4">{application.phone_number || "N/A"}</td>
                         <td className="p-4">
                           <Badge className={getStatusColor(application.status)}>
                             {getStatusText(application.status)}
@@ -361,10 +364,12 @@ export default function ManageApplication() {
                   </Badge>
                   {selectedApplication.reviewed_at && (
                     <p className="text-sm text-muted-foreground">
-                      Reviewed:{" "}
-                      {new Date(
-                        selectedApplication.reviewed_at
-                      ).toLocaleDateString("id-ID")}
+                      {(() => {
+                        const reviewDate = new Date(selectedApplication.reviewed_at);
+                        return !isNaN(reviewDate.getTime())
+                          ? `Reviewed: ${reviewDate.toLocaleDateString("id-ID")}`
+                          : "";
+                      })()}
                     </p>
                   )}
                 </div>
@@ -379,35 +384,57 @@ export default function ManageApplication() {
                         Full Name
                       </p>
                       <p className="font-medium">
-                        {selectedApplication.full_name}
+                        {selectedApplication.full_name || "N/A"}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         NIK
                       </p>
-                      <p>{selectedApplication.nik}</p>
+                      <p>{selectedApplication.nik || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         Phone Number
                       </p>
-                      <p>{selectedApplication.phone_number}</p>
+                      <p>{selectedApplication.phone_number || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         Gender
                       </p>
-                      <p className="capitalize">{selectedApplication.gender}</p>
+                      <p className="capitalize">{selectedApplication.gender || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
                         Date of Birth
                       </p>
                       <p>
-                        {new Date(
-                          selectedApplication.date_of_birth
-                        ).toLocaleDateString("id-ID")}
+                        {(() => {
+                          if (!selectedApplication.date_of_birth) return "N/A";
+                          
+                          // Backend returns date in 'd-m-Y' format (e.g., "30-11-2025")
+                          const dateStr = selectedApplication.date_of_birth;
+                          
+                          // Try to parse as dd-mm-yyyy format
+                          const parts = dateStr.split('-');
+                          if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            const dob = new Date(`${year}-${month}-${day}`);
+                            if (!isNaN(dob.getTime())) {
+                              return dob.toLocaleDateString("id-ID");
+                            }
+                          }
+                          
+                          // Fallback: try direct parsing
+                          const dob = new Date(dateStr);
+                          if (!isNaN(dob.getTime())) {
+                            return dob.toLocaleDateString("id-ID");
+                          }
+                          
+                          // If all parsing fails, show the raw string
+                          return dateStr;
+                        })()}
                       </p>
                     </div>
                     <div>
@@ -415,65 +442,6 @@ export default function ManageApplication() {
                         Email
                       </p>
                       <p>{selectedApplication.user?.email || "N/A"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Address Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Detail Address
-                      </p>
-                      <p>{selectedApplication.address_detail}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          RT/RW
-                        </p>
-                        <p>
-                          RT {selectedApplication.rt}/RW{" "}
-                          {selectedApplication.rw}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Kelurahan
-                        </p>
-                        <p>{selectedApplication.kelurahan}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Kecamatan
-                        </p>
-                        <p>{selectedApplication.kecamatan}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          City
-                        </p>
-                        <p>{selectedApplication.city}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Province
-                        </p>
-                        <p>{selectedApplication.province}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Postal Code
-                        </p>
-                        <p>{selectedApplication.postal_code}</p>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -515,27 +483,16 @@ export default function ManageApplication() {
                           : "N/A"}
                       </span>
                     </div>
-                    {selectedApplication.updated_at &&
-                      selectedApplication.updated_at !==
-                        selectedApplication.created_at && (
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">
-                            Last Updated: 
-                          </span>
-                          <span className="text-sm">
-                            {new Date(
-                              selectedApplication.updated_at
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      )}
                     {selectedApplication.reviewed_at && (
                       <div className="flex justify-between">
                         <span className="text-sm font-medium">Reviewed:</span>
                         <span className="text-sm">
-                          {new Date(
-                            selectedApplication.reviewed_at
-                          ).toLocaleString("id-ID")}
+                          {(() => {
+                            const reviewDate = new Date(selectedApplication.reviewed_at);
+                            return !isNaN(reviewDate.getTime())
+                              ? reviewDate.toLocaleString("id-ID")
+                              : "Not yet reviewed";
+                          })()}
                         </span>
                       </div>
                     )}

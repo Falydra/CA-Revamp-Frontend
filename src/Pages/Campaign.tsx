@@ -3,6 +3,7 @@ import Guest from "@/Layout/GuestLayout";
 import type { Campaign } from "@/types";
 import { apiService } from "@/services/api";
 import CampaignCard from "@/Components/CampaignCard";
+import { Loader2 } from "lucide-react";
 
 
 export default function CampaignPage() {
@@ -47,7 +48,9 @@ export default function CampaignPage() {
     return (
       <Guest>
         <div className="pt-[60px] w-full flex flex-col items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading campaigns...</div>
+          <div className="text-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         </div>
       </Guest>
     );
@@ -65,11 +68,11 @@ export default function CampaignPage() {
 
   return (
     <Guest>
-      <div className="pt-[60px] px-16 w-full flex flex-col items-start justify-start gap-2">
-        <h1 className="text-2xl font-bold px-8">Campaigns</h1>
+      <div className="pt-[60px] px-12 w-full flex flex-col items-center justify-start gap-2">
+        <h1 className="text-2xl font-bold px-8 self-start">Campaigns</h1>
 
         <div className="w-full p-8">
-          <div className="grid-cols-3 grid justify-around gap-6 items-start w-full">
+          <div className="grid-cols-3 grid justify-around gap-6 items-center w-full">
             {campaigns.length > 0 ? (
               campaigns.map((campaign: Campaign) => {
                 return (

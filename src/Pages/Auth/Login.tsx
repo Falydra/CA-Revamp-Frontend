@@ -4,11 +4,13 @@ import {Link } from "react-router-dom";
 import Layout from "@/Components/Layout";
 import LoginForm from "@/Components/LoginForm";
 import RegisterForm from "@/Components/RegisterForm";
+import ForgotPasswordForm from "@/Components/ForgotPasswordForm";
 
 
 export default function Login() {
   const [showLoginForm, setShowLoginForm] = useState(true);
   const [showSignUpForm, setShowSignUpForm] = useState(false);
+  const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
  
   
 
@@ -29,7 +31,8 @@ export default function Login() {
             >
              
               <LoginForm setShowLoginForm={setShowLoginForm}
-                setShowSignUpForm={setShowSignUpForm}/>
+                setShowSignUpForm={setShowSignUpForm}
+                setShowForgotPasswordForm={setShowForgotPasswordForm}/>
             </motion.div>
           )}
 
@@ -47,6 +50,20 @@ export default function Login() {
                 setShowSignUpForm={setShowSignUpForm}
               />
               
+            </motion.div>
+          )}
+
+          {showForgotPasswordForm && (
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex w-4/5 h-full flex-col items-center justify-center text-center"
+            >
+              <ForgotPasswordForm
+                setShowLoginForm={setShowLoginForm}
+                setShowForgotPasswordForm={setShowForgotPasswordForm}
+              />
             </motion.div>
           )}
         </div>

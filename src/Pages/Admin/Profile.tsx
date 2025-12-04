@@ -8,6 +8,7 @@ import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { toast } from "sonner";
 import type { User } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function AdminProfile() {
   const navigate = useNavigate();
@@ -18,6 +19,14 @@ export default function AdminProfile() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+  });
+
+  // Password change state
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
   });
 
   useEffect(() => {
@@ -103,11 +112,54 @@ export default function AdminProfile() {
     }
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.password !== passwordData.password_confirmation) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const response = await apiService.updatePassword({
+        current_password: passwordData.current_password,
+        password: passwordData.password,
+        password_confirmation: passwordData.password_confirmation,
+      });
+
+      if (response.success) {
+        toast.success("Password changed successfully!");
+        setPasswordData({
+          current_password: '',
+          password: '',
+          password_confirmation: '',
+        });
+      }
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading profile...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         </div>
       </AdminLayout>
     );
@@ -128,7 +180,7 @@ export default function AdminProfile() {
 
   return (
     <AdminLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="w-3/5 p-4 mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Admin Profile</h1>
@@ -220,6 +272,64 @@ export default function AdminProfile() {
                 </p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Change Password</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current_password">Current Password</Label>
+              <Input
+                id="current_password"
+                name="current_password"
+                type="password"
+                value={passwordData.current_password}
+                onChange={handlePasswordChange}
+                placeholder="Enter current password"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">New Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={passwordData.password}
+                onChange={handlePasswordChange}
+                placeholder="Enter new password (min. 8 characters)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password_confirmation">Confirm New Password</Label>
+              <Input
+                id="password_confirmation"
+                name="password_confirmation"
+                type="password"
+                value={passwordData.password_confirmation}
+                onChange={handlePasswordChange}
+                placeholder="Confirm new password"
+              />
+            </div>
+
+            <Button 
+              onClick={handleChangePassword} 
+              disabled={changingPassword || !passwordData.current_password || !passwordData.password || !passwordData.password_confirmation}
+              className="w-full"
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Changing Password...
+                </>
+              ) : (
+                'Change Password'
+              )}
+            </Button>
           </CardContent>
         </Card>
 

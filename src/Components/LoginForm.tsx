@@ -13,12 +13,14 @@ import type { Role } from "@/types";
 interface LoginFormProps {
   setShowLoginForm: (val: boolean) => void;
   setShowSignUpForm: (val: boolean) => void;
+  setShowForgotPasswordForm: (val: boolean) => void;
 }
 
 
 export default function LoginForm({
   setShowLoginForm,
   setShowSignUpForm,
+  setShowForgotPasswordForm,
 }: LoginFormProps) {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
@@ -145,7 +147,13 @@ export default function LoginForm({
             </label>
           </div>
           <div className="block mt-4">
-            <span className="ms-2 text-sm cursor-pointer hover:text-blue-500 text-blue-300">
+            <span 
+              onClick={() => {
+                setShowLoginForm(false);
+                setShowForgotPasswordForm(true);
+              }}
+              className="ms-2 text-sm cursor-pointer hover:text-blue-500 text-blue-300"
+            >
               Forgot password?
             </span>
           </div>

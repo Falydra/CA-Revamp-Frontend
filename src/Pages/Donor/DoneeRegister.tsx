@@ -6,6 +6,7 @@ import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
+import { Loader2 } from "lucide-react";
 import type { User,  OrganizerApplication } from "@/types";
 import { apiService } from "@/services/api";
 
@@ -163,6 +164,44 @@ export default function DoneeRegister() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleQuickApply = async () => {
+    if (!user) {
+      toast.error("User not found. Please login again.");
+      navigate("/auth/login");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      console.log("Submitting organizer application with existing identity...");
+      const applicationResponse = await apiService.createOrganizerApplication();
+
+      if (applicationResponse.success) {
+        toast.success(
+          "Initiator application submitted successfully! Please wait for admin review."
+        );
+        navigate("/dashboard/donor");
+      } else {
+        throw new Error("Failed to submit organizer application");
+      }
+    } catch (error: any) {
+      console.error("Quick apply error:", error);
+
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.response?.data?.error === "identities") {
+        toast.error("Please complete your identity information first");
+      } else if (error.response?.data?.error === "organizer_applications") {
+        toast.error("You already have an active application");
+      } else {
+        toast.error("Application failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -203,6 +242,7 @@ export default function DoneeRegister() {
         setHasIdentity(true);
         toast.success("Identity information saved successfully");
       } else {
+        // Only update identity if user made changes
         const formData = new FormData();
         formData.append("full_name", form.full_name);
         formData.append("phone_number", form.phone_number);
@@ -281,7 +321,7 @@ export default function DoneeRegister() {
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
                         existingApplication.attributes.status === "pending"
                           ? "bg-yellow-100 text-yellow-800"
-                          : existingApplication.attributes.status === "approved"
+                          : existingApplication.attributes.status === "accepted"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                       }`}
@@ -297,8 +337,8 @@ export default function DoneeRegister() {
                       Your application is being reviewed by our admin team.
                     </p>
                   )}
-                  {existingApplication.attributes.status === "approved" && (
-                    <p className="text-sm text-green-600 mt-2">
+                  {existingApplication.attributes.status === "accepted" && (
+                    <p className="text-sm text-primary-bg mt-2">
                       Congratulations! Your application has been approved.
                     </p>
                   )}
@@ -309,7 +349,7 @@ export default function DoneeRegister() {
                     </p>
                   )}
                 </div>
-                <div className=" md:grid-cols-2 gap-4 items-center">
+                <div className="flex-row flex md:grid-cols-2 gap-4 items-center">
                   <Button
                     onClick={() => navigate("/dashboard/donor")}
                     className="w-full"
@@ -319,7 +359,12 @@ export default function DoneeRegister() {
 
                   {existingApplication.attributes.status === "rejected" && (
                     <Button onClick={handleReapply} className="w-full">
-                      Apply Again
+                      Re-Apply
+                    </Button>
+                  )}
+                  {existingApplication.attributes.status === "accepted" && (
+                    <Button onClick={() => navigate("/dashboard/organizer")} className="w-full">
+                      Go to Dashboard
                     </Button>
                   )}
                 </div>
@@ -335,7 +380,7 @@ export default function DoneeRegister() {
     return (
       <DonorLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         </div>
       </DonorLayout>
     );
@@ -343,7 +388,7 @@ export default function DoneeRegister() {
 
   return (
     <DonorLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 p-4">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Register as Initiator</h1>
           <p className="text-muted-foreground mt-2">
@@ -352,10 +397,25 @@ export default function DoneeRegister() {
           </p>
           {hasIdentity && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800 text-sm">
+              <p className="text-blue-800 text-sm font-medium">
                 ✓ Identity information found. You can review and update the
-                details below.
+                details below, or apply directly with your existing information.
               </p>
+              <Button 
+                onClick={handleQuickApply} 
+                disabled={loading}
+                className="mt-3"
+                size="sm"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Quick Apply Now'
+                )}
+              </Button>
             </div>
           )}
         </div>
@@ -414,7 +474,7 @@ export default function DoneeRegister() {
                       name="gender"
                       value={form.gender}
                       onChange={handleChange}
-                      className={`w-full p-2.5 border rounded-md ${
+                      className={`w-full h-9 px-2 text-sm border rounded-md ${
                         errors.gender ? "border-red-500" : "border-gray-300"
                       } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       required
@@ -422,7 +482,6 @@ export default function DoneeRegister() {
                       <option value="">Select Gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
-                      <option value="other">Other</option>
                     </select>
                     {errors.gender && (
                       <p className="text-red-500 text-sm">{errors.gender}</p>
@@ -507,11 +566,21 @@ export default function DoneeRegister() {
                   variant="outline"
                   onClick={() => navigate("/dashboard/donor")}
                   className="flex-1"
+                  disabled={loading}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? "Processing..." : "Apply as Initiator"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : hasIdentity ? (
+                    "Update & Apply as Initiator"
+                  ) : (
+                    "Apply as Initiator"
+                  )}
                 </Button>
               </div>
             </form>

@@ -46,8 +46,7 @@ export default function CampaignDetail() {
   const [fundHistory, setfundHistory] = useState<FundSummary[]>([]);
   const [itemHistory, setItemHistory] = useState<DonatedItemSummary[]>([]);
 
-  const [error, setError] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [error, setError] = useState(false)
 
   const fetchCampaignData = async () => {
     if (!id) return;
@@ -331,17 +330,31 @@ export default function CampaignDetail() {
                 <Share2Icon size={16} strokeWidth={3} />
                 Share
               </div>
-              {type === "fundraiser" && (
+              {type === "fundraiser" && campaign?.attributes.status === "finished" ? (
+                <button
+                  disabled
+                  className="w-2/3 h-full rounded font-medium text-white bg-gray-400 cursor-not-allowed"
+                >
+                  Campaign Finished
+                </button>
+              ) : type === "fundraiser" ? (
                 <Dialog>
-                  <DialogTrigger className="w-2/3 h-full rounded font-medium text-white bg-pink-500 active:bg-pink-600 transition-colors duration-100">
+                  <DialogTrigger className="w-2/3 h-full rounded font-medium text-white bg-pink-500 hover:bg-pink-600 active:bg-pink-600 transition-colors duration-100">
                     Donate Now
                   </DialogTrigger>
                   <DonateFundForm campaign={campaign} />
                 </Dialog>
-              )}
-              {type === "product_donation" && (
+              ) : null}
+              {type === "product_donation" && campaign?.attributes.status === "finished" ? (
+                <button
+                  disabled
+                  className="w-2/3 h-full rounded font-medium text-white bg-gray-400 cursor-not-allowed"
+                >
+                  Campaign Finished
+                </button>
+              ) : type === "product_donation" ? (
                 <Dialog>
-                  <DialogTrigger className="w-2/3 h-full rounded font-medium text-white bg-pink-500 active:bg-pink-600 transition-colors duration-100">
+                  <DialogTrigger className="w-2/3 h-full rounded font-medium text-white bg-pink-500 hover:bg-pink-600 active:bg-pink-600 transition-colors duration-100">
                     Donate Now
                   </DialogTrigger>
                   <DonateItemForm
@@ -350,7 +363,7 @@ export default function CampaignDetail() {
                     requestedSupplies={requestedSupplies}
                   />
                 </Dialog>
-              )}
+              ) : null}
             </div>
           </section>
         )}

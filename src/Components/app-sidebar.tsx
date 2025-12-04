@@ -3,13 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Settings,
-  Users,
   BookOpen,
   Heart,
-  TrendingUp,
   FileText,
   Shield,
   UserPlus,
+  FolderOpen,
+  PlusSquare,
+  History,
+  User,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,36 +44,68 @@ type SidebarGroupConfig = {
 
 function getIconForItem(item: ConfigMenuItem): LucideIcon {
   const t = (item.title || "").toLowerCase();
-  const u = (item.url || "").toLowerCase();
 
-  if (t.includes("dashboard") || u.endsWith("/dashboard") || u === "/dashboard" || u.includes("/dashboard/")) {
+  // Dashboard
+  if (t.includes("dashboard")) {
     return Home;
   }
-  if (t.includes("profile") || u.includes("/profile")) {
-    return Users;
+  
+  // Profile (single user)
+  if (t.includes("profile")) {
+    return User;
   }
-  if (t.includes("riwayat") || t.includes("history") || u.includes("/history")) {
-    return TrendingUp;
+  
+  // Donation History (history with time)
+  if (t.includes("history")) {
+    return History;
   }
-  if (t.includes("donasi") || t.includes("donation") || t.includes("campaign") || u.includes("/donation") || u.includes("/campaign")) {
-    return Heart;
+  
+  // My Donations (folder/file icon)
+  if (t.includes("my donation")) {
+    return FolderOpen;
   }
-  if (t.includes("buku") || t.includes("book") || u.includes("/book")) {
-    return BookOpen;
+  
+  // New Campaign (plus square for new)
+  if (t.includes("new campaign") || t.includes("create")) {
+    return PlusSquare;
   }
-  if (t.includes("manage") || t.includes("report") || u.includes("/manage") || u.includes("/reports")) {
-    return FileText;
-  }
-  if (t.includes("setting") || u.includes("/settings")) {
-    return Settings;
-  }
-  if (t.includes("application") || t.includes("review") || u.includes("/application")) {
-    return Shield;
-  }
-  if (t.includes("create") || t.includes("buka") || u.includes("/create") || u.includes("/register")) {
+  
+  // Organizer Registration
+  if (t.includes("registration")) {
     return UserPlus;
   }
+  
+  // Manage Admins / Manage Users (multiple users)
+  if (t.includes("manage admin") || t.includes("manage user")) {
+    return UsersRound;
+  }
+  
+  // Other Manage pages
+  if (t.includes("manage")) {
+    return FileText;
+  }
+  
+  // Donations/Campaigns
+  if (t.includes("donation") || t.includes("campaign")) {
+    return Heart;
+  }
+  
+  // Books
+  if (t.includes("book")) {
+    return BookOpen;
+  }
+  
+  // Applications
+  if (t.includes("application")) {
+    return Shield;
+  }
+  
+  // Settings
+  if (t.includes("setting")) {
+    return Settings;
+  }
 
+  // Default fallback
   return Home;
 }
 
@@ -86,10 +121,9 @@ function getGroupsForRole(roles: string[]): SidebarGroupConfig[] {
   } else if (roles.includes("donor")) {
     const mainItems = DonorPage.mainPage.items ?? [];
     const profileItems = (DonorPage.mainPage as any).profileItems ?? [];
-    const groups: SidebarGroupConfig[] = [];
-    if (mainItems.length) groups.push({ label: "Menu", items: mainItems });
-    if (profileItems.length) groups.push({ label: "Profile", items: profileItems });
-    return groups;
+    // Merge both main and profile items into a single "Menu" group
+    const allItems = [...mainItems, ...profileItems];
+    return [{ label: "Menu", items: allItems }];
   } 
 
   return [
@@ -107,6 +141,10 @@ function isMenuItemActive(currentPath: string, menuUrl: string): boolean {
     return true;
   }
 
+  // Special handling for review-donations page - should highlight "My Donations"
+  if (currentPath.includes('/review-donations') && menuUrl === '/dashboard/organizer/donations') {
+    return true;
+  }
 
   const specialCases = [
     {
@@ -190,8 +228,8 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
           .filter((g) => (g.items?.length ?? 0) > 0)
           .map((group, gi) => (
             <SidebarGroup key={`${group.label}-${gi}`}>
-              <SidebarGroupLabel className="text-primary-bg font-bold text-lg rounded-none">
-                {group.label === "Menu" ? "CA Revamp" : group.label}
+              <SidebarGroupLabel className="text-black font-bold text-lg rounded-none">
+                {group.label === "Menu" ? "Menu" : group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -205,7 +243,7 @@ export function AppSidebar({ onMenuItemClick }: AppSidebarProps) {
                           onClick={() => handleItemClick(item.url)}
                           className={`cursor-pointer ${isActive
                             ? "bg-primary-bg text-white hover:bg-primary-bg hover:text-white "
-                            : "hover:bg-primary-accent/10"
+                            : "hover:bg-primary-bg/10"
                             }`}
                         >
                           <Icon />

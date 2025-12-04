@@ -68,7 +68,7 @@ export default function Charity() {
       className="w-full flex flex-col gap-8 justify-center"
     >
       <section className="w-full h-fit flex flex-col items-center justify-start py-16 px-4 relative overflow-hidden">
-        <div className="transform w-2/12 top-0 items-center justify-center flex flex-col">
+        <div className="transform w-3/12 top-0 items-center justify-center flex flex-col">
           <div className="relative w-full flex items-center justify-center px-1 py-1 bg-gray-700 border border-gray-600 rounded-full">
             <div
               className={`absolute top-0 left-0 h-full rounded-3xl w-1/2 bg-gradient-to-t from-gray-600 to-transparent shadow-[0_0_10px_3px_rgba(255,255,255,0.3)] transition-transform duration-300 ease-in-out ${isMoney
@@ -149,7 +149,7 @@ export default function Charity() {
       <section className="w-full h-full flex flex-col items-center justify-start px-4 relative overflow-hidden">
         <div className="w-full h-full flex flex-col px-16 gap-4">
           <h2 className="text-xl font-bold">Latest Fundraiser</h2>
-          <div className="flex gap-6 py-4 overflow-x-scroll snap-x scrollbar-hide">
+          <div className="grid grid-cols-3 gap-6 py-4 w-full">
             {isLoading ? (
               Array.from({ length: 3 }).map((arr, i) => <CampaignCardSkeleton key={i} />)
             ) : (
@@ -157,7 +157,7 @@ export default function Charity() {
                 fundraisers.slice(0, 3).map((campaign: Campaign) => {
                   return <CampaignCard
                     campaign={campaign}
-                    minWidth="80"
+                    width="full"
                     key={campaign.attributes.slug} />
                 })
               ) : (
@@ -171,15 +171,15 @@ export default function Charity() {
       <section className="w-full h-full flex flex-col items-center justify-start px-4 relative overflow-hidden">
         <div className="w-full h-full flex flex-col px-16 gap-4">
           <h2 className="text-xl font-bold">Latest Product Campaigns</h2>
-          <div className="flex gap-6 py-4 overflow-x-scroll snap-x scrollbar-hide">
+          <div className="grid grid-cols-3 gap-6 py-4 w-full">
             {isLoading ? (
               Array.from({ length: 3 }).map((arr, i) => <CampaignCardSkeleton key={i} />)
             ) : (
               (productCampaigns.length > 0 ? (
-                productCampaigns.map((campaign: Campaign) => {
+                productCampaigns.slice(0, 3).map((campaign: Campaign) => {
                   return <CampaignCard
                     campaign={campaign}
-                    minWidth="80"
+                    width="full"
                     key={campaign.attributes.slug} />
                 })
               ) : (

@@ -78,7 +78,7 @@ export function CardWithForm({ campaign }: CardWithFormProps) {
               </div>  
 
               <Link
-                className="w-full flex h-[50px] hover:bg-primary-bg bg-primary-accent items-center justify-center rounded-md mt-4"
+                className="w-full flex h-[50px] hover:bg-primary-bg/70 bg-primary-bg items-center justify-center rounded-md mt-4"
                
                 to={`/campaigns/${campaign.attributes?.slug || displayId}`}
               >

@@ -5,6 +5,7 @@ import { apiService } from "@/services/api";
 import type { User, Campaign } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
+import { Loader2 } from "lucide-react";
 
 function formatPrice(value: number): string {
   if (value == 0) {
@@ -44,27 +45,36 @@ export default function DonorDashboard() {
           : [];
         setCampaigns(campaignList.slice(0, 6));
         try {
-          const donationResponse = await apiService.getDonorDonations(1, 5);
-          const donationList = Array.isArray(donationResponse?.data?.data)
+          // Fetch all donations - backend already filters by current user
+          const donationResponse = await apiService.getDonorDonations(1, 100);
+          console.log("Donation API Response:", donationResponse);
+          console.log("Full first donation:", JSON.stringify(donationResponse?.data?.data?.[0], null, 2));
+          
+          let allDonations = Array.isArray(donationResponse?.data?.data)
             ? donationResponse.data.data
             : Array.isArray(donationResponse?.data)
             ? donationResponse.data
             : [];
-          setDonations(donationList);
+          
+          console.log("All donations:", allDonations);
+          
+          // Set only the recent donations for display
+          setDonations(allDonations.slice(0, 5));
 
-          const totalDonations = donationList.length;
-          const totalAmount = donationList.reduce(
+          // Calculate total amount from all donations
+          const totalDonations = allDonations.length;
+          const totalAmount = allDonations.reduce(
             (sum: number, donation: any) => {
-           
-              const amount = donation.attributes?.amount || donation.amount || 0;
-             
+              const amount = donation.attributes?.amount || 0;
               const numericAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
-              return sum + (numericAmount || 0);
+              console.log(`Donation ${donation.id}: type=${donation.attributes?.type}, amount=${numericAmount}`);
+              return sum + numericAmount;
             },
             0
           );
           
-
+          console.log(`Total: ${totalDonations} donations, ${totalAmount} amount`);
+          
           setStats({
             totalDonations,
             totalAmount,
@@ -93,7 +103,7 @@ export default function DonorDashboard() {
     return (
       <DonorLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading dashboard...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />.</div>
         </div>
       </DonorLayout>
     );
@@ -103,8 +113,8 @@ export default function DonorDashboard() {
 
   return (
     <DonorLayout>
-      <div className="space-y-6 p-4">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
+      <div className="space-y-6 p-4 w-full">
+        <div className="bg-primary-bg text-white p-6 rounded-lg">
           <h1 className="text-2xl font-bold">
             Welcome back, {user?.name || "Donor"}!
           </h1>
@@ -178,9 +188,13 @@ export default function DonorDashboard() {
                   >
                     <div>
                       <p className="font-medium">
-                        {donation.campaign?.attributes?.title ||
+                        {donation.relationships?.campaign?.attributes?.title ||
+                          donation.campaign?.attributes?.title ||
                           donation.campaign?.title ||
                           "Campaign"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {donation.attributes?.type === 'fund' ? 'Fund Donation' : 'Item Donation'}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(
@@ -189,15 +203,21 @@ export default function DonorDashboard() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">
-                        Rp {formatPrice(
-                          typeof (donation.attributes?.amount || donation.amount) === 'string' 
-                            ? parseInt(donation.attributes?.amount || donation.amount, 10) 
-                            : (donation.attributes?.amount || donation.amount || 0)
-                        )}
-                      </p>
+                      {donation.attributes?.type === 'fund' ? (
+                        <p className="font-bold text-lg">
+                          Rp {formatPrice(
+                            typeof donation.attributes?.amount === 'string' 
+                              ? parseInt(donation.attributes.amount, 10) 
+                              : (donation.attributes?.amount || 0)
+                          )}
+                        </p>
+                      ) : (
+                        <p className="font-bold text-lg">
+                          {donation.attributes?.items_count || 0} {donation.attributes?.items_count === 1 ? 'Item' : 'Items'}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground capitalize">
-                        {donation.attributes?.status || donation.status || "pending"}
+                        {donation.attributes?.status || "pending"}
                       </p>
                     </div>
                   </div>
@@ -346,21 +366,26 @@ export default function DonorDashboard() {
                       </span>
                     </div>
 
-                    <Link to={`/campaigns/${campaignData.slug || campaign.id}`}>
+                    {campaignData.status === "finished" || campaignData.status === "rejected" ? (
                       <Button
                         size="sm"
                         className="w-full"
-                        disabled={
-                          campaignData.status === "finished" ||
-                          campaignData.status === "rejected"
-                        }
+                        disabled
                       >
-                        {campaignData.status === "on_progress" ||
-                        campaignData.status === "pending"
-                          ? "View Details"
-                          : "Campaign Ended"}
+                        {campaignData.status === "finished" 
+                          ? "Campaign Ended"
+                          : "Campaign Rejected"}
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link to={`/campaigns/${campaignData.slug || campaign.id}`}>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                        >
+                          View Details
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 );
               })}

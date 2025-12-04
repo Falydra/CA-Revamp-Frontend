@@ -7,6 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
 import { toast } from "sonner";
 import {
   Search,
@@ -19,6 +25,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  FileText,
+  Package,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,6 +55,9 @@ export default function ManageDonations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Normalize extracting the status string from different API resource shapes
   const getCampaignStatus = (campaign: any) =>
@@ -195,6 +207,35 @@ export default function ManageDonations() {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
+  const handleViewDetail = async (campaignId: string) => {
+    try {
+      setLoadingDetail(true);
+      setIsDetailModalOpen(true);
+      
+      // Fetch full campaign details including address and requested items
+      const response = await apiService.getCampaign(campaignId);
+      console.log("Campaign detail response:", response);
+      
+      // Handle different response structures
+      let campaignData = null;
+      if (response?.data?.data) {
+        campaignData = response.data.data;
+      } else if (response?.data) {
+        campaignData = response.data;
+      } else {
+        campaignData = response;
+      }
+      
+      setSelectedCampaign(campaignData);
+    } catch (error) {
+      console.error("Error fetching campaign details:", error);
+      toast.error("Failed to load campaign details");
+      setIsDetailModalOpen(false);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   console.log(
     "Campaigns:",
     campaigns.map((c) => c)
@@ -210,10 +251,7 @@ export default function ManageDonations() {
               Review and manage all donation campaigns
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Campaign
-          </Button>
+          
         </div>
 
         <Card>
@@ -237,7 +275,7 @@ export default function ManageDonations() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="flex-1 p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 h-9 px-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending Review</option>
@@ -338,13 +376,7 @@ export default function ManageDonations() {
                               <div className="flex items-center gap-3">
                                 <img
                                   src={
-                                    campaignData.header_image_url
-                                      ? campaignData.header_image_url.startsWith(
-                                          "/storage/"
-                                        )
-                                        ? `http://localhost:8000${campaignData.header_image_url}`
-                                        : `http://localhost:8000/storage/${campaignData.header_image_url}`
-                                      : "/images/Charity1.jpeg"
+                                    campaignData.header_image_url || "/images/Charity1.jpeg"
                                   }
                                   alt={campaignData.title || "Campaign"}
                                   className="w-12 h-12 object-cover rounded-md"
@@ -366,7 +398,7 @@ export default function ManageDonations() {
                             <TableCell>{organizerName}</TableCell>
                             <TableCell>
                               <Badge variant="secondary">
-                                {campaignData.requested_fund_amount >= 0
+                                {campaignData.requested_fund_amount > 0
                                   ? "Fundraiser"
                                   : "Items"}
                               </Badge>
@@ -400,11 +432,11 @@ export default function ManageDonations() {
                                 <div className="text-xs text-muted-foreground">
                                   {campaignData.requested_fund_amount > 0 ? (
                                     <>
-                                      Rp{" "}
+                                      Rp.{" "}
                                       {formatPrice(
                                         campaignData.donated_fund_amount || 0
                                       )}{" "}
-                                      / Rp{" "}
+                                      / Rp.{" "}
                                       {formatPrice(
                                         campaignData.requested_fund_amount || 0
                                       )}
@@ -434,14 +466,23 @@ export default function ManageDonations() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => handleViewDetail(campaign.id)}
+                                    className="cursor-pointer"
+                                  >
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    View Full Details
+                                  </DropdownMenuItem>
+                                  
                                   <DropdownMenuItem asChild>
                                     <Link
                                       to={`/campaigns/${
                                         campaignData.slug || campaign.id
                                       }`}
+                                      className="cursor-pointer"
                                     >
                                       <Eye className="w-4 h-4 mr-2" />
-                                      View Details
+                                      View Public Page
                                     </Link>
                                   </DropdownMenuItem>
 
@@ -454,7 +495,7 @@ export default function ManageDonations() {
                                             "on_progress"
                                           )
                                         }
-                                        className="text-green-600"
+                                        className="text-primary-bg cursor-pointer"
                                       >
                                         <Check className="w-4 h-4 mr-2" />
                                         Approve
@@ -466,7 +507,7 @@ export default function ManageDonations() {
                                             "rejected"
                                           )
                                         }
-                                        className="text-red-600"
+                                        className="text-red-600 cursor-pointer"
                                       >
                                         <X className="w-4 h-4 mr-2" />
                                         Reject
@@ -491,7 +532,7 @@ export default function ManageDonations() {
                                     onClick={() =>
                                       handleDeleteCampaign(campaign.id)
                                     }
-                                    className="text-red-600"
+                                    className="text-red-600 cursor-pointer"
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
@@ -537,6 +578,281 @@ export default function ManageDonations() {
             )}
           </CardContent>
         </Card>
+
+        {/* Campaign Detail Modal */}
+        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Campaign Details</DialogTitle>
+            </DialogHeader>
+
+            {loadingDetail ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-lg">Loading...</div>
+              </div>
+            ) : selectedCampaign ? (
+              <div className="space-y-6">
+                {/* Campaign Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Campaign Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Campaign ID</p>
+                        <p className="font-medium">{selectedCampaign.id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Status</p>
+                        <Badge className={getStatusColor(getCampaignStatus(selectedCampaign))}>
+                          {getCampaignStatus(selectedCampaign)}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Campaign Type</p>
+                        <p className="font-medium capitalize">
+                          {selectedCampaign.attributes?.campaign_type || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                        <p>{selectedCampaign.attributes?.created_at || "N/A"}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Title</p>
+                      <p className="font-medium text-lg">{selectedCampaign.attributes?.title || "N/A"}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Description</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedCampaign.attributes?.description || "N/A"}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Organizer</p>
+                      <p className="font-medium">
+                        {selectedCampaign.relationships?.organizer?.attributes?.name || "N/A"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Address Information */}
+                {selectedCampaign.relationships?.address && (
+                  <Card className="border-orange-200 bg-orange-50/50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-orange-600" />
+                        Campaign Address (For Verification)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Address Detail</p>
+                        <p>{selectedCampaign.relationships.address.address_detail || "N/A"}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Village/Kelurahan</p>
+                          <p>{selectedCampaign.relationships.address.village || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Sub-District/Kecamatan</p>
+                          <p>{selectedCampaign.relationships.address.sub_district || "N/A"}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">City/Kabupaten</p>
+                          <p>{selectedCampaign.relationships.address.city || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Province</p>
+                          <p>{selectedCampaign.relationships.address.province || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Postal Code</p>
+                          <p>{selectedCampaign.relationships.address.postal_code || "N/A"}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Donation Progress */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Donation Progress</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedCampaign.attributes?.requested_fund_amount > 0 ? (
+                      <>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Target Amount</p>
+                          <p className="text-2xl font-bold">
+                            Rp {formatPrice(selectedCampaign.attributes.requested_fund_amount || 0)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Amount Raised</p>
+                          <p className="text-xl font-semibold text-primary-bg">
+                            Rp {formatPrice(selectedCampaign.attributes.donated_fund_amount || 0)}
+                          </p>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div
+                            className="bg-primary-bg h-4 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(
+                                Math.round(
+                                  (selectedCampaign.attributes.donated_fund_amount /
+                                    selectedCampaign.attributes.requested_fund_amount) *
+                                    100
+                                ),
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Target Items</p>
+                          <p className="text-2xl font-bold">
+                            {selectedCampaign.attributes?.requested_item_quantity || 0} items
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Items Donated</p>
+                          <p className="text-xl font-semibold text-primary-bg">
+                            {selectedCampaign.attributes?.donated_item_quantity || 0} items
+                          </p>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div
+                            className="bg-primary-bg h-4 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(
+                                Math.round(
+                                  (selectedCampaign.attributes.donated_item_quantity /
+                                    selectedCampaign.attributes.requested_item_quantity) *
+                                    100
+                                ),
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Requested Items (for product donation campaigns) */}
+                {selectedCampaign.relationships?.requested_items && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Requested Items</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Books */}
+                      {selectedCampaign.relationships.requested_items.books?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Books</h4>
+                          <div className="space-y-2">
+                            {selectedCampaign.relationships.requested_items.books.map((book: any, index: number) => (
+                              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <p className="font-medium">{book.attributes?.title || "Unknown Title"}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Author: {book.attributes?.author || "Unknown"}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    ISBN: {book.attributes?.isbn || "N/A"}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary">
+                                  Qty: {book.attributes?.requested_quantity || 0}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Supplies */}
+                      {selectedCampaign.relationships.requested_items.supplies?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Supplies</h4>
+                          <div className="space-y-2">
+                            {selectedCampaign.relationships.requested_items.supplies.map((supply: any, index: number) => (
+                              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <div className="flex-1">
+                                  <p className="font-medium">{supply.attributes?.name || "Unknown Supply"}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {supply.attributes?.description || "No description"}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary">
+                                  Qty: {supply.attributes?.requested_quantity || 0}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(!selectedCampaign.relationships.requested_items.books?.length && 
+                        !selectedCampaign.relationships.requested_items.supplies?.length) && (
+                        <p className="text-muted-foreground text-center py-4">
+                          No specific items requested (bulk donation)
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Action Buttons */}
+                {getCampaignStatus(selectedCampaign) === "pending" && (
+                  <div className="flex justify-end gap-4 pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleStatusUpdate(selectedCampaign.id, "rejected");
+                        setIsDetailModalOpen(false);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reject Campaign
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        handleStatusUpdate(selectedCampaign.id, "on_progress");
+                        setIsDetailModalOpen(false);
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Approve Campaign
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No campaign data available</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

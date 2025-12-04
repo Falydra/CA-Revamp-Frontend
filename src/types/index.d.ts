@@ -9,6 +9,9 @@ export type User = {
   updated_at?: string;
   roles?: Role[];
   role?: string;
+  identity?: Identity;
+  phone?: string; // Legacy field for backward compatibility
+  address?: string; // Legacy field for backward compatibility
 };
 
 export type LoginResponse = {
@@ -60,7 +63,7 @@ export type OrganizerApplication = {
   organizer_application_id: string;
   user_id: string;
   attributes: {
-    status: "pending" | "approved" | "rejected";
+    status: "pending" | "accepted" | "rejected";
     rejected_message?: string | null;
     reviewed_at?: string | null;
   }
@@ -285,14 +288,15 @@ export type UserProfile = {
 } | null;
 
 export interface Identity {
-  id: string;
+  identity_id: string;
   user_id: string;
   full_name: string;
   phone_number: string;
   gender: 'male' | 'female' | 'other';
   date_of_birth: string;
   nik: string;
-  id_card_image: string | null;
+  profile_image_url: string | null;
+  id_card_image_url: string | null;
   created_at: string;
   updated_at: string;
 }

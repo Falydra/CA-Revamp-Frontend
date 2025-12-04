@@ -8,6 +8,7 @@ import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { toast } from "sonner";
 import type { User } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function DoneeProfile() {
   const navigate = useNavigate();
@@ -18,7 +19,14 @@ export default function DoneeProfile() {
     name: '',
     email: '',
     phone: '',
-    address: '',
+  });
+
+  // Password change state
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
   });
 
   useEffect(() => {
@@ -28,14 +36,14 @@ export default function DoneeProfile() {
         
         
         const storedUser = localStorage.getItem("user");
+        let userData;
         if (storedUser) {
-          const userData = JSON.parse(storedUser);
+          userData = JSON.parse(storedUser);
           setUser(userData);
           setFormData({
             name: userData.name || '',
             email: userData.email || '',
             phone: userData.phone || '',
-            address: userData.address || '',
           });
         }
 
@@ -43,15 +51,21 @@ export default function DoneeProfile() {
         try {
           const response = await apiService.getCurrentUser();
           if (response.success && response.data) {
-            setUser(response.data);
+            // Merge API response with existing userData to preserve all fields
+            const mergedUser = {
+              ...userData, // Keep existing data (user_id, phone, address, created_at, etc.)
+              ...response.data, // Update with fresh data from API (name, email, roles)
+            };
+            
+            setUser(mergedUser);
             setFormData({
-              name: response.data.name || '',
-              email: response.data.email || '',
-              phone: response.data.phone || '',
-              address: response.data.address || '',
+              name: mergedUser.name || '',
+              email: mergedUser.email || '',
+              phone: mergedUser.phone || '',
             });
             
-            localStorage.setItem("user", JSON.stringify(response.data));
+            // Save merged data back to localStorage
+            localStorage.setItem("user", JSON.stringify(mergedUser));
           }
         } catch (apiError) {
           console.log("Could not fetch fresh user data, using stored data");
@@ -107,11 +121,54 @@ export default function DoneeProfile() {
     }
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.password !== passwordData.password_confirmation) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const response = await apiService.updatePassword({
+        current_password: passwordData.current_password,
+        password: passwordData.password,
+        password_confirmation: passwordData.password_confirmation,
+      });
+
+      if (response.success) {
+        toast.success("Password changed successfully!");
+        setPasswordData({
+          current_password: '',
+          password: '',
+          password_confirmation: '',
+        });
+      }
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <DoneeLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading profile...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         </div>
       </DoneeLayout>
     );
@@ -132,9 +189,9 @@ export default function DoneeProfile() {
 
   return (
     <DoneeLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="w-3/5  space-y-6 p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Initiator Profile</h1>
+          <h1 className="text-2xl font-bold">Organizer Profile</h1>
           <div className="flex gap-2">
             {editing ? (
               <>
@@ -164,9 +221,8 @@ export default function DoneeProfile() {
                 <Input
                   id="name"
                   name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  disabled={!editing}
+                  value={user.identity?.full_name || formData.name}
+                  disabled
                 />
               </div>
 
@@ -187,9 +243,8 @@ export default function DoneeProfile() {
                 <Input
                   id="phone"
                   name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  disabled={!editing}
+                  value={user.identity?.phone_number || formData.phone}
+                  disabled
                   placeholder="Enter phone number"
                 />
               </div>
@@ -203,18 +258,55 @@ export default function DoneeProfile() {
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Address</Label>
+              <div className="space-y-2">
+                <Label htmlFor="nik">NIK (ID Card Number)</Label>
                 <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Enter your address"
+                  id="nik"
+                  value={user.identity?.nik || 'Not provided'}
+                  disabled
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Input
+                  id="gender"
+                  value={user.identity?.gender ? user.identity.gender.charAt(0).toUpperCase() + user.identity.gender.slice(1) : 'Not provided'}
+                  disabled
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                <Input
+                  id="date_of_birth"
+                  value={user.identity?.date_of_birth || 'Not provided'}
+                  disabled
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="identity_id">Identity ID</Label>
+                <Input
+                  id="identity_id"
+                  value={user.identity?.identity_id || 'N/A'}
+                  disabled
                 />
               </div>
             </div>
+
+            {user.identity?.id_card_image_url && (
+              <div className="pt-4 border-t">
+                <Label>ID Card Image</Label>
+                <div className="mt-2">
+                  <img 
+                    src={user.identity.id_card_image_url} 
+                    alt="ID Card" 
+                    className="max-w-md rounded-lg border"
+                  />
+                </div>
+              </div>
+            )}
 
             {user.created_at && (
               <div className="pt-4 border-t">
@@ -230,25 +322,63 @@ export default function DoneeProfile() {
           </CardContent>
         </Card>
 
+        
+
         <Card>
           <CardHeader>
-            <CardTitle>Campaign Statistics</CardTitle>
+            <CardTitle>Change Password</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">0</div>
-                <div className="text-sm text-muted-foreground">Total Campaigns</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">0</div>
-                <div className="text-sm text-muted-foreground">Active Campaigns</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">Rp 0</div>
-                <div className="text-sm text-muted-foreground">Funds Raised</div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="current_password">Current Password</Label>
+              <Input
+                id="current_password"
+                name="current_password"
+                type="password"
+                value={passwordData.current_password}
+                onChange={handlePasswordChange}
+                placeholder="Enter current password"
+              />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">New Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={passwordData.password}
+                onChange={handlePasswordChange}
+                placeholder="Enter new password (min. 8 characters)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password_confirmation">Confirm New Password</Label>
+              <Input
+                id="password_confirmation"
+                name="password_confirmation"
+                type="password"
+                value={passwordData.password_confirmation}
+                onChange={handlePasswordChange}
+                placeholder="Confirm new password"
+              />
+            </div>
+
+            <Button 
+              onClick={handleChangePassword} 
+              disabled={changingPassword || !passwordData.current_password || !passwordData.password || !passwordData.password_confirmation}
+              className="w-full"
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Changing Password...
+                </>
+              ) : (
+                'Change Password'
+              )}
+            </Button>
           </CardContent>
         </Card>
 
@@ -260,14 +390,14 @@ export default function DoneeProfile() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 variant="outline" 
-                onClick={() => navigate("/dashboard/donee/donations")}
+                onClick={() => navigate("/dashboard/organizer/donations")}
                 className="flex-1"
               >
                 View My Campaigns
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => navigate("/dashboard/donee/donations/create")}
+                onClick={() => navigate("/dashboard/organizer/create")}
                 className="flex-1"
               >
                 Create Campaign

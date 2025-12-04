@@ -4,6 +4,7 @@ import { apiService } from "@/services/api";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
+import { Loader2 } from "lucide-react";
 
 function formatPrice(value: number): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -22,6 +23,7 @@ export default function DonationHistory() {
       setError(null);
 
       const response = await apiService.getDonorDonations(page, 10);
+      console.log("Donation history response:", response);
 
       if (response?.data) {
         const donationList = Array.isArray(response.data.data)
@@ -38,12 +40,19 @@ export default function DonationHistory() {
       }
     } catch (error: any) {
       console.error("Error fetching donation history:", error);
+      console.error("Error details:", error.response);
+      
+      // Don't trigger logout on errors, just show error message
       if (error?.response?.status === 401) {
-        setError("Please login to view your donation history");
+        setError("Your session has expired. Please login again.");
+      } else if (error?.response?.status === 404) {
+        // 404 might mean no donations endpoint, treat as no donations
+        console.log("No donations endpoint found, showing empty state");
+        setDonations([]);
+        setError(null);
       } else {
-        setError("Failed to load donation history");
+        setError("Failed to load donation history. Please try again.");
       }
-      setDonations([]);
     } finally {
       setLoading(false);
     }
@@ -76,7 +85,7 @@ export default function DonationHistory() {
     return (
       <DonorLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading donation history...</div>
+          <div className="text-lg"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         </div>
       </DonorLayout>
     );
@@ -148,15 +157,24 @@ export default function DonationHistory() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium">Amount:</span>
-                            <p className="text-lg font-bold text-green-600">
-                              Rp{" "}
-                              {formatPrice(
-                                typeof (donation as any).attributes?.amount === 'string' 
-                                  ? parseInt((donation as any).attributes.amount, 10) 
-                                  : ((donation as any).attributes?.amount || 0)
-                              )}
-                            </p>
+                            <span className="font-medium">
+                              {(donation as any).attributes?.type === 'fund' ? 'Amount:' : 'Items:'}
+                            </span>
+                            {(donation as any).attributes?.type === 'fund' ? (
+                              <p className="text-lg font-bold text-primary-bg">
+                                Rp{" "}
+                                {formatPrice(
+                                  typeof (donation as any).attributes?.amount === 'string' 
+                                    ? parseInt((donation as any).attributes.amount, 10) 
+                                    : ((donation as any).attributes?.amount || 0)
+                                )}
+                              </p>
+                            ) : (
+                              <p className="text-lg font-bold text-primary-bg">
+                                {(donation as any).attributes?.items_count || 0}{" "}
+                                {(donation as any).attributes?.items_count === 1 ? 'Item' : 'Items'}
+                              </p>
+                            )}
                           </div>
 
                           <div>

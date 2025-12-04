@@ -14,22 +14,23 @@ export const DonorPage = {
             
             },
             {
-                title: "Riwayat Donasi",
+                title: "Donation History",
                 url: "/dashboard/donor/history",
                 isActive: false,
                 
             },
         ] as MenuItem[],
         profileItems: [
+          
             {
-                title: "Profile",
-                url: "/dashboard/donor/profile",
+                title: "Organizer Registration",
+                url: "/dashboard/donor/profile/registration",
                 isActive: false,
                 
             },
-            {
-                title: "Registrasi Inisiator Donasi",
-                url: "/dashboard/donor/profile/registration",
+              {
+                title: "Profile",
+                url: "/dashboard/donor/profile",
                 isActive: false,
                 
             },
@@ -46,13 +47,25 @@ export const OrganizerPage = {
                 isActive: false,
             },
             {
-                title: "Donasi Dibuka",
+                title: "My Donations",
                 url: "/dashboard/organizer/donations",
                 isActive: false,
                
             },
             {
-                title: "Buka Donasi Baru",
+                title: "Received Donations",
+                url: "/dashboard/organizer/campaign-donations",
+                isActive: false,
+               
+            },
+            {
+                title: "Donation History",
+                url: "/dashboard/organizer/history",
+                isActive: false,
+               
+            },
+            {
+                title: "New Campaign",
                 url: "/dashboard/organizer/create",
                 isActive: false,
               
@@ -96,6 +109,12 @@ export const AdminPage = {
                 
             },
             {
+                title: "Donation History",
+                url: "/dashboard/admin/history",
+                isActive: false,
+               
+            },
+            {
                 title: "Profile",
                 url: "/dashboard/admin/profile",
                 isActive: false,
@@ -110,19 +129,31 @@ export const SuperAdminPage = {
         items: [
             {
                 title: "Dashboard",
-                url: "/dashboard/super-admin",
+                url: "/dashboard/superadmin",
                 isActive: false,
                
             },
             {
-                title: "Manage Users",
-                url: "/dashboard/super-admin/manage-users",
+                title: "Manage Admins",
+                url: "/dashboard/superadmin/manage-admins",
                 isActive: false,
                 
             },
             {
+                title: "Manage Users",
+                url: "/dashboard/superadmin/manage-users",
+                isActive: false,
+                
+            },
+            {
+                title: "Donation History",
+                url: "/dashboard/superadmin/history",
+                isActive: false,
+                
+            },
+            {   
                 title: "Profile",
-                url: "/dashboard/super-admin/profile",
+                url: "/dashboard/superadmin/profile",
                 isActive: false,
                 
             },

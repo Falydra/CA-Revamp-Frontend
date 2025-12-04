@@ -123,7 +123,7 @@ export default function CharityNews({
                         e.currentTarget.src = "/images/Charity1.jpeg";
                       }}
                     />
-                    <div className="w-2/12 h-6 bg-primary-accent z-10 top-1 left-1 items-center justify-center flex font-semibold text-xs relative rounded-3xl text-white">
+                    <div className="w-2/12 h-6 bg-primary-bg z-10 top-1 left-1 items-center justify-center flex font-semibold text-xs relative rounded-3xl text-white">
                       <span>Berita</span>
                     </div>
                   </Link>

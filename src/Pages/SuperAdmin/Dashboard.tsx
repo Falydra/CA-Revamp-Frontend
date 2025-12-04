@@ -1,99 +1,124 @@
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/Components/ui/chart";
+import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
 import Authenticated from "@/Layout/AuthenticatedLayout";
+import { Users, Heart, Clock, CheckCircle, TrendingUp, AlertTriangle, Shield, Loader2 } from "lucide-react";
+import { apiService } from "@/services/api";
+import { useEffect, useState } from "react";
 import type { User } from "@/types";
-import { useNavigate } from "react-router-dom";
-import { CartesianGrid, XAxis, Bar, BarChart } from "recharts";
+import { FaUser } from "react-icons/fa";
 
-
-interface SuperAdminDashboardProps {
-  user: {
-    data: User[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    next_page_url: string | null;
-    prev_page_url: string | null;
-  };
-
-  auth: {
-    user: User;
-    roles: string;
-  };
-  [key: string]: any;
+interface DashboardStats {
+  totalUsers: number;
+  totalAdmins: number;
+  totalCampaigns: number;
+  pendingCampaigns: number;
+  activeCampaigns: number;
+  totalFundsRaised: number;
+  pendingApplications: number;
 }
 
 export default function SuperAdminDashboard() {
-  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    totalAdmins: 0,
+    totalCampaigns: 0,
+    pendingCampaigns: 0,
+    activeCampaigns: 0,
+    totalFundsRaised: 0,
+    pendingApplications: 0,
+  });
 
-  const user = {
-    data: [],
-    current_page: 1,
-    last_page: 1,
-    per_page: 10,
-    total: 0,
-    next_page_url: null,
-    prev_page_url: null,
+  useEffect(() => {
+    fetchDashboardStats();
+    const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.superAdmin.getDashboardStats();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const chartData = [
-    { month: "January", Jawa: 186, China: 80 },
-    { month: "February", Jawa: 305, China: 200 },
-    { month: "March", Jawa: 237, China: 120 },
-    { month: "April", Jawa: 73, China: 190 },
-    { month: "May", Jawa: 209, China: 130 },
-    { month: "June", Jawa: 214, China: 140 },
-  ];
-
-  const chartConfig = {
-    Jawa: {
-      label: "Jawa",
-      color: "#2563eb",
-    },
-    China: {
-      label: "China",
-      color: "#60a5fa",
-    },
-  } satisfies ChartConfig;
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("id-ID").format(price);
+  };
 
   return (
     <Authenticated>
-      <div className="flex w-full flex-col max-h-screen items-start justify-start px-8 py-4 bg-primary-bg gap-4">
-        <h1 className="text-2xl font-bold">Data Statistic</h1>
-        <div className="flex w-full justify-center items-center gap-4 ">
-          <div className="bg-primary-fg w-full text-primary-bg p-4 rounded shadow">
-            <h2 className="text-xl font-semibold">Total Users</h2>
-            <p className="text-xl">{user.total}</p>
-          </div>
-
-          <div className="bg-primary-fg w-full text-primary-bg p-4 rounded shadow">
-            <h2 className="text-xl font-semibold">Active Fundraiser</h2>
-            <p className="text-xl">5</p>
-          </div>
+      <div className="space-y-6 p-4 w-full">
+         <div className="bg-primary-bg text-white p-6 rounded-lg">
+          <h1 className="text-2xl font-bold">
+            Welcome, {user?.name || "Superadmin"}!
+          </h1>
+          <p className="text-blue-100 mt-2">
+            Manage all donation activities
+          </p>
         </div>
-        <ChartContainer config={chartConfig} className="h-[380px] w-full">
-          <BarChart data={chartData}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="Jawa" fill="var(--color-Jawa)" radius={4} />
-            <Bar dataKey="China" fill="var(--color-China)" radius={4} />
-          </BarChart>
-        </ChartContainer>
+
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">Registered users</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.totalAdmins}</div>
+              <p className="text-xs text-muted-foreground">Platform administrators</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Campaigns
+              </CardTitle>
+              <Heart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.totalCampaigns}</div>
+              <p className="text-xs text-muted-foreground">All campaigns</p>
+            </CardContent>
+          </Card>
+
+          
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Campaigns
+              </CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{loading ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /> : stats.activeCampaigns}</div>
+              <p className="text-xs text-muted-foreground">Currently running</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Authenticated>
   );

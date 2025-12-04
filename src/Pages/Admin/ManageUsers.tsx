@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import AdminLayout from "@/Layout/AuthenticatedLayout";
 import { apiService } from "@/services/api";
 import type { User } from "@/types";
@@ -11,18 +10,11 @@ import { toast } from "sonner";
 import {
   Search,
   Edit,
-  Trash2,
-  MoreHorizontal,
   Plus,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/Components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -31,6 +23,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/Components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
+import { Label } from "@/Components/ui/label";
 
 export default function ManageUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -39,33 +40,48 @@ export default function ManageUsers() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [perPage] = useState(10);
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editData, setEditData] = useState({
+    email: "",
+    password: "",
+    password_confirmation: "",
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Debug: Check what user is logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const storedRoles = localStorage.getItem('roles');
+    console.log("Current user:", storedUser);
+    console.log("Current roles:", storedRoles);
+  }, []);
 
   const fetchUsers = async (page = 1, search?: string) => {
     try {
-      const response = await apiService.admin.getUsers(page, perPage);
+      const response = await apiService.admin.getUsers(page, perPage, search);
+      
+      console.log("Raw response:", response);
 
       const payload = response?.success ? response.data : response;
+      
+      console.log("Payload:", payload);
 
-      if (
-        payload &&
-        (Array.isArray(payload.data) || payload.data === undefined)
-      ) {
-        const usersArray = Array.isArray(payload.data)
-          ? payload.data
-          : Array.isArray(payload)
-          ? payload
-          : [];
-        setUsers(usersArray || []);
-        setTotalPages(payload.last_page ?? payload.meta?.last_page ?? 1);
-        setCurrentPage(
-          payload.current_page ?? payload.meta?.current_page ?? page
-        );
-        setTotalUsers(
-          payload.total ?? payload.meta?.total ?? usersArray.length
-        );
+      // Handle the response structure from UserCollection
+      if (payload && payload.data) {
+        const usersArray = Array.isArray(payload.data) ? payload.data : [];
+        console.log("Users array:", usersArray);
+        
+        setUsers(usersArray);
+        setTotalPages(payload.last_page ?? 1);
+        setCurrentPage(payload.current_page ?? page);
+        setTotalUsers(payload.total ?? usersArray.length);
       } else {
+        console.error("Invalid payload structure:", payload);
         setUsers([]);
-        toast.error("Failed to load users");
+        toast.error("Failed to load users - invalid response structure");
       }
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -94,22 +110,79 @@ export default function ManageUsers() {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const handleOpenEditModal = (user: User) => {
+    setSelectedUser(user);
+    setEditData({
+      email: user.email,
+      password: "",
+      password_confirmation: "",
+    });
+    setIsEditModalOpen(true);
+  };
 
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedUser(null);
+    setEditData({
+      email: "",
+      password: "",
+      password_confirmation: "",
+    });
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    // Validation
+    if (editData.password && editData.password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    if (editData.password !== editData.password_confirmation) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (!editData.email) {
+      toast.error("Email is required");
+      return;
+    }
+
+    setIsUpdating(true);
     try {
-      await apiService.admin.deleteUser(userId);
-      toast.success("User deleted successfully");
+      // Prepare update data - only include password if it's being changed
+      const updateData: any = {
+        email: editData.email,
+      };
+
+      if (editData.password) {
+        updateData.password = editData.password;
+        updateData.password_confirmation = editData.password_confirmation;
+      }
+
+      await apiService.admin.updateUser(selectedUser.user_id, updateData);
+      toast.success("User updated successfully");
+      handleCloseEditModal();
       fetchUsers(currentPage, searchTerm);
     } catch (error: any) {
-      console.error("Error deleting user:", error);
+      console.error("Error updating user:", error);
       if (error?.response?.status === 403) {
-        toast.error("You don't have permission to delete this user");
-      } else if (error?.response?.status === 400) {
-        toast.error(error.response.data.message || "Cannot delete this user");
+        toast.error("You don't have permission to update this user");
+      } else if (error?.response?.status === 422) {
+        const errors = error.response.data.errors;
+        if (errors?.email) {
+          toast.error(errors.email[0]);
+        } else if (errors?.password) {
+          toast.error(errors.password[0]);
+        } else {
+          toast.error("Validation error");
+        }
       } else {
-        toast.error("Failed to delete user");
+        toast.error("Failed to update user");
       }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -120,13 +193,23 @@ export default function ManageUsers() {
 
   const getUserRoleDisplay = (user: User) => {
     if (user.roles && user.roles.length > 0) {
-      return user.roles.map((role) => role.name).join(", ");
+      return user.roles[0].name;
     }
     return user.role || "User";
   };
 
   const getRoleBadgeColor = (role: string) => {
-    const normalizedRole = role.toLowerCase();
+    let normalizedRole = role.toLowerCase();
+    if (normalizedRole.includes("superadmin")) {
+      normalizedRole = "superadmin";
+    } else if (normalizedRole.includes("admin")) {
+      normalizedRole = "admin";
+    } else if (normalizedRole.includes("organizer")) {
+      normalizedRole = "organizer"; 
+    } else {
+      normalizedRole = "donor";
+    }
+
     switch (normalizedRole) {
       case "superadmin":
         return "bg-red-100 text-red-800";
@@ -151,13 +234,10 @@ export default function ManageUsers() {
           <div>
             <h1 className="text-2xl font-bold">Manage Users</h1>
             <p className="text-muted-foreground">
-              View and manage all platform users ({totalUsers} total)
+              View and manage all users ({totalUsers} total)
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add User
-          </Button>
+          
         </div>
 
         <Card>
@@ -261,30 +341,16 @@ export default function ManageUsers() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                  <Link
-                                    to={`/dashboard/admin/edit-user/${user.user_id}`}
-                                  >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit User
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteUser(user.user_id)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete User
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleOpenEditModal(user)}
+                              disabled={getUserRoleDisplay(user).toLowerCase().includes("superadmin")}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -325,6 +391,75 @@ export default function ManageUsers() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit User Modal */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update email or password for {selectedUser?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editData.email}
+                  onChange={(e) =>
+                    setEditData({ ...editData, email: e.target.value })
+                  }
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-password">New Password (optional)</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={editData.password}
+                  onChange={(e) =>
+                    setEditData({ ...editData, password: e.target.value })
+                  }
+                  placeholder="Leave empty to keep current password"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-password-confirmation">
+                  Confirm New Password
+                </Label>
+                <Input
+                  id="edit-password-confirmation"
+                  type="password"
+                  value={editData.password_confirmation}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      password_confirmation: e.target.value,
+                    })
+                  }
+                  placeholder="Confirm password"
+                  disabled={!editData.password}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCloseEditModal}
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateUser} disabled={isUpdating}>
+                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isUpdating ? "Updating..." : "Update User"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
